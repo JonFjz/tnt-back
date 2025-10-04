@@ -1,24 +1,34 @@
 
-from flask import Flask, request, jsonify
-import pandas as pd
-from src.star_manager import StarManager
+from flask import Flask, jsonify
+from src.controllers.search_controller import SearchController
+from src.controllers.stars_controller import StarsController
 
 app = Flask(__name__)
-manager = StarManager()
+
+# Initialize controllers
+search_controller = SearchController()
+stars_controller = StarsController()
+
+@app.get("/")
+def health_check():
+    """Health check endpoint."""
+    return jsonify({"status": "ok", "message": "TNT Backend API is running"})
 
 @app.get("/stars")
 def get_star_lightcurve():
-    
-    mission = (request.args.get("mission") or "").strip()
-    target_id = (request.args.get("id") or "").strip()
-    df = manager.fetch_lightcurve(mission, target_id)
-    return jsonify(df.to_dict(orient="records"))
+    """Get lightcurve data for a specific star."""
+    return stars_controller.get_star_lightcurve()
+
+@app.get("/search")
+def search_stars():
+    """Search for stars using MAST catalog with various filters."""
+    return search_controller.search_stars()
 
 
 
 
 if __name__ == "__main__":
-    # For local dev only
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    # Use 0.0.0.0 to allow external connections (required for Docker)
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
 
