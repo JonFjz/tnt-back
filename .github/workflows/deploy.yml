@@ -18,20 +18,21 @@ jobs:
 
     - name: Stop and remove existing container (if any)
       run: |
-        sudo docker stop tnt-back || true
-        sudo docker rm tnt-back || true
+        
+        docker stop tnt-back || true
+        docker rm tnt-back || true
       continue-on-error: true
 
     - name: Remove old Docker image (if any)
       run: |
-        sudo docker rmi tnt-back || true
+        docker rmi tnt-back || true
       continue-on-error: true
 
     - name: Build Docker image
-      run: sudo docker build -t tnt-back .
+      run: docker build -t tnt-back .
 
     - name: Run Docker container
-      run: sudo docker run -d -p 5000:5000 --name tnt-back tnt-back
+      run: docker run -d -p 5000:5000 --name tnt-back tnt-back
 
     # - name: Verify deployment
     #   run: |
