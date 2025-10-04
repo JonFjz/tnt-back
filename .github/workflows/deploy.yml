@@ -1,0 +1,40 @@
+name: Build and deploy to TNT-Server
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Stop and remove existing container (if any)
+      run: |
+        docker stop tnt-back || true
+        docker rm tnt-back || true
+      continue-on-error: true
+
+    - name: Remove old Docker image (if any)
+      run: |
+        docker rmi tnt-back || true
+      continue-on-error: true
+
+    - name: Build Docker image
+      run: docker build -t tnt-back .
+
+    - name: Run Docker container
+      run: docker run -d -p 80:80 --name tnt-back tnt-back
+
+    # - name: Verify deployment
+    #   run: |
+    #     echo "Waiting for container to start..."
+    #     sleep 10
+    #     docker ps | grep tnt-back
