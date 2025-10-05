@@ -4,16 +4,49 @@ import pandas as pd
 from src.star_manager import Processor
 from src.file_processor import FileProcessor
 from src.services.model_service import ModelService
+from src.services.mast_search_service import MastSearchService
 import os
+
 app = Flask(__name__)
 
-
-# manager = StarManager()
+# Initialize services
 model_service = ModelService()
+mast_search_service = MastSearchService()
 MODEL_DIR = "saved_models"
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 
+
+@app.get("/search")
+def search_stars():
+    """
+    Search for stars using MAST catalog with filters matching your frontend form.
+    """
+    # Get parameters 
+    ra = request.args.get("ra", type=float)
+    dec = request.args.get("dec", type=float) 
+    radius = request.args.get("radius", 15.0, type=float)
+    mag_min = request.args.get("mag_min", 6.0, type=float)
+    mag_max = request.args.get("mag_max", 15.0, type=float) 
+    temp_min = request.args.get("temp_min", 3000.0, type=float)
+    temp_max = request.args.get("temp_max", 7500.0, type=float)
+    dist_min = request.args.get("dist_min", 10.0, type=float)
+    dist_max = request.args.get("dist_max", 500.0, type=float)
+    
+    # Execute the search using MAST service
+    result = mast_search_service.search_stars_with_filters(
+        ra=ra,
+        dec=dec, 
+        radius=radius,
+        mag_min=mag_min,
+        mag_max=mag_max,
+        temp_min=temp_min,
+        temp_max=temp_max,
+        dist_min=dist_min, 
+        dist_max=dist_max
+    )
+    
+    return jsonify(result)
 
 @app.get("/analyze")
 def analyze():
