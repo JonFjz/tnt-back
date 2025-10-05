@@ -1207,32 +1207,32 @@ class ExoplanetParameterProcessor:
 
 
 # ========== USAGE EXAMPLE ==========
-if __name__ == "__main__":
-    # Example TESS usage
-    processor = ExoplanetParameterProcessor(
-        fits_path=r"C:\Users\drind\Downloads\tess2025014115807-s0088-0000000114018671-0285-s_lc.fits",
-        mission="tess",
-        catalog={
-            'st_teff': 7070.0,
-            'st_tefferr1': 100.0,
-            'st_tefferr2': 100.0,
-            'st_rad': 2.00601,
-            'st_raderr1': 0.1,
-            'st_raderr2': 0.1,
-            'st_mass': 1.565,
-            'st_masserr1': 0.05,
-            'st_masserr2': 0.05,
-            'st_logg': 4.0,
-            'st_loggerr1': 0.1,
-            'st_loggerr2': 0.1,
-            'st_dist': 100.0,
-            'st_disterr1': 5.0,
-            'st_disterr2': 5.0,
-            'st_tmag': 10.5,
-            'st_tmagerr1': 0.05,
-            'st_tmagerr2': 0.05
-        }
-    )
+# if __name__ == "__main__":
+#     # Example TESS usage
+#     processor = ExoplanetParameterProcessor(
+#         fits_path=r"C:\Users\drind\Downloads\tess2025014115807-s0088-0000000114018671-0285-s_lc.fits",
+#         mission="tess",
+#         catalog={
+#             'st_teff': 7070.0,
+#             'st_tefferr1': 100.0,
+#             'st_tefferr2': 100.0,
+#             'st_rad': 2.00601,
+#             'st_raderr1': 0.1,
+#             'st_raderr2': 0.1,
+#             'st_mass': 1.565,
+#             'st_masserr1': 0.05,
+#             'st_masserr2': 0.05,
+#             'st_logg': 4.0,
+#             'st_loggerr1': 0.1,
+#             'st_loggerr2': 0.1,
+#             'st_dist': 100.0,
+#             'st_disterr1': 5.0,
+#             'st_disterr2': 5.0,
+#             'st_tmag': 10.5,
+#             'st_tmagerr1': 0.05,
+#             'st_tmagerr2': 0.05
+#         }
+#     )
     
-    output_json = processor.process()
-    print(f"\nOutput saved to: {output_json}")
+#     output_json = processor.process()
+#     print(f"\nOutput saved to: {output_json}")

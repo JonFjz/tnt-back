@@ -2,7 +2,7 @@
 Quick test script to verify visualization generation
 """
 
-from exoplanet_processor import ExoplanetParameterProcessor
+from src.exoplanet_processor import ExoplanetParameterProcessor
 import json
 from pathlib import Path
 

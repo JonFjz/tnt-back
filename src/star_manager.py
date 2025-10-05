@@ -12,6 +12,7 @@ class StarProcessor:
         self.file_path = file_path
         self.response= None
         self.found = None
+        self.manualSearch = False
 
         if self.mission.lower() == "tess":
             self.found = self.foundPlanet()
@@ -21,8 +22,11 @@ class StarProcessor:
           
 
         if self.response is None:
+            self.manualSearch = True
             self.getFitsData()
-            self.getData() 
+            print("Downloaded FITS file:", self.file_path)
+            self.getData()
+             
            
 
         # Check if the target exists in TOI and KOI
@@ -101,6 +105,7 @@ class StarProcessor:
     def getFitsData(self):
         if self.file_path is None:
             mission = (self.mission or "").strip().lower()
+            #put the things the user can change here for the file download
             process = LatestFITSFetcher(
                 mission=mission, 
                 target_id=self.target_id,
@@ -113,16 +118,14 @@ class StarProcessor:
             # We'll call getData() separately if needed, not automatically here
 
 
-    def getData(self):   
-        mission = (self.mission or "").strip().lower()
-        meta = StarMetaFetcher(mission, self.target_id) 
-        self.stellar = meta.fetch_stellar()
-        self.products = meta.list_mast_products()
+    def getData(self):
+        meta = StarMetaFetcher(self.mission, self.target_id)
+        blob = meta.fetch_stellar()            # {"source","stellar","raw"}
+        self.stellar = blob                    # keep both mapped + raw for debugging
+        self.products = []
 
-    def getBestParametersAI(self):
-        # Implement the logic to get the best parameters using AI (gpt)
-        pass
 
+    
     def foundPlanet(self) -> int:
         """
         Return 1 if TIC has ≥1 confirmed planet (NASA Exoplanet Archive),

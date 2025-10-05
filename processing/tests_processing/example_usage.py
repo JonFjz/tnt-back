@@ -14,7 +14,7 @@ Date: October 5, 2025
 
 import json
 from pathlib import Path
-from exoplanet_processor import ExoplanetParameterProcessor
+from src.exoplanet_processor import ExoplanetParameterProcessor
 
 
 def example_tess_processing():

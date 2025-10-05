@@ -6,6 +6,7 @@ from src.file_processor import FileProcessor
 from src.services.model_service import ModelService
 from src.services.mast_search_service import MastSearchService
 from src.data_mapper import build_model_payload_from_row
+from src.exoplanet_processor import ExoplanetParameterProcessor
 import os
 
 app = Flask(__name__)
@@ -63,25 +64,55 @@ def analyze():
         file_processor = FileProcessor(file)
         
     response = StarProcessor(mission, target_id, oi_lookup, parameters,  file_processor.file_path if file else None)
-    
+    output_json = None
+    stellar_all_data = {}
 
-    #call drings function to analyze the data
+    if response.manualSearch:
+        # Use actual stellar data from the StarProcessor response
+        stellar_data = response.stellar["stellar"] if response.stellar else {}
+        stellar_all_data = response.stellar
+        processor = ExoplanetParameterProcessor(
+            fits_path=response.file_path,
+            mission=mission,
+            catalog={
+                'st_teff': stellar_data.get('st_teff'),
+                'st_tefferr1': stellar_data.get('st_tefferr1'),
+                'st_tefferr2': stellar_data.get('st_tefferr2'),
+                'st_rad': stellar_data.get('st_rad'),
+                'st_raderr1': stellar_data.get('st_raderr1'),
+                'st_raderr2': stellar_data.get('st_raderr2'),
+                'st_mass': stellar_data.get('st_mass'),
+                'st_masserr1': stellar_data.get('st_masserr1'),
+                'st_masserr2': stellar_data.get('st_masserr2'),
+                'st_logg': stellar_data.get('st_logg'),
+                'st_loggerr1': stellar_data.get('st_loggerr1'),
+                'st_loggerr2': stellar_data.get('st_loggerr2'),
+                'st_dist': stellar_data.get('st_dist'),
+                'st_disterr1': stellar_data.get('st_disterr1'),
+                'st_disterr2': stellar_data.get('st_disterr2'),
+                'st_tmag': stellar_data.get('st_tmag'),
+                'st_tmagerr1': stellar_data.get('st_tmagerr1'),
+                'st_tmagerr2': stellar_data.get('st_tmagerr2')
+            }
+        )
+        #we need this for front 
+        output_json = processor.process()
+        #form the payload for the model
+    else:
+        payload = build_model_payload_from_row(
+            mission=mission,
+            row=response.response,
+            optimization_type=optimization_type,
+            model_name=model_name,
+            overrides={},
+        )
 
-    payload = build_model_payload_from_row(
-        mission=mission,
-        row=response.response,
-        optimization_type=optimization_type,
-        model_name=model_name,
-        overrides={},
-    )
+    model_result = model_service.predict(payload.to_dict())
 
-    result = model_service.predict(payload.to_dict())
-    
-    if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], int):
-            return jsonify(result[0]), result[1]
-        
+    response = {"processed_json": output_json,  "manual_search": stellar_all_data}
+    return response
 
-    return {"airesponse":result, "response": response.response}
+#we need an endpoint that also send the iamges to the front end
 
 @app.route('/train-model', methods=['POST'])
 def train_model():

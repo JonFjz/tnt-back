@@ -13,6 +13,7 @@ warnings.filterwarnings(
 )
 
 import lightkurve as lk  
+from astroquery.mast import Observations
 
 
 class DownloadError(RuntimeError):

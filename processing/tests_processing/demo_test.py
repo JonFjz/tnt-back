@@ -17,7 +17,7 @@ from pathlib import Path
 # Add parent directory to path if needed
 sys.path.insert(0, str(Path(__file__).parent))
 
-from exoplanet_processor import ExoplanetParameterProcessor
+from src.exoplanet_processor import ExoplanetParameterProcessor
 
 
 def demo_with_sample_data():
