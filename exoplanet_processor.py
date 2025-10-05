@@ -17,6 +17,8 @@ import logging
 import json
 import numpy as np
 import warnings
+import base64
+from io import BytesIO
 from pathlib import Path
 from typing import Dict, Optional, List, Tuple, Any
 
@@ -928,27 +930,43 @@ class ExoplanetParameterProcessor:
         
         return eng
     
+    def _fig_to_base64(self, fig) -> str:
+        """
+        Convert matplotlib figure to base64 encoded string.
+        
+        Args:
+            fig: Matplotlib figure object
+        
+        Returns:
+            Base64 encoded string with data URI prefix
+        """
+        buffer = BytesIO()
+        fig.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
+        buffer.seek(0)
+        image_bytes = buffer.read()
+        buffer.close()
+        
+        # Encode to base64 and add data URI prefix
+        base64_str = base64.b64encode(image_bytes).decode('utf-8')
+        return f"data:image/png;base64,{base64_str}"
+    
     def _generate_visualizations(self):
         """
-        Generate visualization plots for frontend:
+        Generate visualization plots for frontend as Base64-encoded images.
         1. Aperture mask (if TPF)
         2. Raw light curve
         3. Flattened/normalized light curve
         4. Folded light curve with transit model
         
-        Saves paths to self.visualization_paths for inclusion in JSON output.
+        Stores base64 data in self.visualization_paths for embedding in JSON DTO.
         """
         self.logger.info("=" * 70)
-        self.logger.info("STEP 4/5: Generating visualizations")
+        self.logger.info("STEP 4/5: Generating visualizations (Base64 encoded)")
         self.logger.info("=" * 70)
         
-        output_dir = self.fits_path.parent / "visualizations"
-        output_dir.mkdir(exist_ok=True)
         base_name = self.fits_path.stem
         
-        self.logger.info(f"  Output directory: {output_dir}")
-        
-        # Clear previous visualization paths
+        # Clear previous visualization data
         self.visualization_paths = []
         
         # 1. Aperture mask (TPF only)
@@ -957,15 +975,17 @@ class ExoplanetParameterProcessor:
                 fig = plt.figure(figsize=(8, 8))
                 self.tpf.plot(aperture_mask=self.aperture_mask, ax=plt.gca())
                 plt.title(f"Aperture Mask - {base_name}")
-                aperture_path = output_dir / f"{base_name}_aperture.png"
-                plt.savefig(aperture_path, dpi=150, bbox_inches='tight')
+                
+                # Convert to base64
+                base64_data = self._fig_to_base64(fig)
                 plt.close(fig)
+                
                 self.visualization_paths.append({
                     "type": "aperture",
-                    "path": str(aperture_path),
-                    "filename": aperture_path.name
+                    "data": base64_data,
+                    "filename": f"{base_name}_aperture.png"
                 })
-                self.logger.info(f"  ✓ Saved aperture plot: {aperture_path}")
+                self.logger.info(f"  ✓ Generated aperture plot (Base64)")
             except Exception as e:
                 self.logger.warning(f"  ⚠ Failed to generate aperture plot: {e}")
                 import traceback
@@ -980,15 +1000,17 @@ class ExoplanetParameterProcessor:
                 ax.set_xlabel("Time (BTJD)")
                 ax.set_ylabel("Flux")
                 ax.legend()
-                raw_lc_path = output_dir / f"{base_name}_raw_lc.png"
-                plt.savefig(raw_lc_path, dpi=150, bbox_inches='tight')
+                
+                # Convert to base64
+                base64_data = self._fig_to_base64(fig)
                 plt.close(fig)
+                
                 self.visualization_paths.append({
                     "type": "raw_light_curve",
-                    "path": str(raw_lc_path),
-                    "filename": raw_lc_path.name
+                    "data": base64_data,
+                    "filename": f"{base_name}_raw_lc.png"
                 })
-                self.logger.info(f"  ✓ Saved raw light curve: {raw_lc_path}")
+                self.logger.info(f"  ✓ Generated raw light curve (Base64)")
             except Exception as e:
                 self.logger.warning(f"  ⚠ Failed to generate raw LC plot: {e}")
                 import traceback
@@ -1004,15 +1026,17 @@ class ExoplanetParameterProcessor:
                 ax.set_ylabel("Normalized Flux")
                 ax.legend()
                 ax.grid(alpha=0.3)
-                norm_lc_path = output_dir / f"{base_name}_normalized_lc.png"
-                plt.savefig(norm_lc_path, dpi=150, bbox_inches='tight')
+                
+                # Convert to base64
+                base64_data = self._fig_to_base64(fig)
                 plt.close(fig)
+                
                 self.visualization_paths.append({
                     "type": "normalized_light_curve",
-                    "path": str(norm_lc_path),
-                    "filename": norm_lc_path.name
+                    "data": base64_data,
+                    "filename": f"{base_name}_normalized_lc.png"
                 })
-                self.logger.info(f"  ✓ Saved normalized light curve: {norm_lc_path}")
+                self.logger.info(f"  ✓ Generated normalized light curve (Base64)")
             except Exception as e:
                 self.logger.warning(f"  ⚠ Failed to generate normalized LC plot: {e}")
                 import traceback
@@ -1035,15 +1059,16 @@ class ExoplanetParameterProcessor:
                 ax.grid(alpha=0.3)
                 ax.set_xlim(-0.5, 0.5)
                 
-                folded_lc_path = output_dir / f"{base_name}_folded_lc.png"
-                plt.savefig(folded_lc_path, dpi=150, bbox_inches='tight')
+                # Convert to base64
+                base64_data = self._fig_to_base64(fig)
                 plt.close(fig)
+                
                 self.visualization_paths.append({
                     "type": "folded_light_curve",
-                    "path": str(folded_lc_path),
-                    "filename": folded_lc_path.name
+                    "data": base64_data,
+                    "filename": f"{base_name}_folded_lc.png"
                 })
-                self.logger.info(f"  ✓ Saved folded light curve: {folded_lc_path}")
+                self.logger.info(f"  ✓ Generated folded light curve (Base64)")
             except Exception as e:
                 self.logger.warning(f"  ⚠ Failed to generate folded LC plot: {e}")
                 import traceback
@@ -1101,19 +1126,58 @@ class ExoplanetParameterProcessor:
         
         return issues
     
-    def _save_json(self) -> str:
+    def _extract_model_data(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Save parameters to JSON file.
+        Extract model-specific parameters for ML inference.
+        
+        For TESS (TOI): 23 parameters for recall model
+        For Kepler (KOI): 14 parameters for precision model
+        
+        Args:
+            params: Full parameter dictionary
         
         Returns:
-            Path to output JSON file
+            Dictionary with only model-required parameters
+        """
+        if self.mission == 'tess':
+            # TESS TOI recall model parameters (23 parameters)
+            toi_params = [
+                'pl_trandurherr1', 'eng_transit_probability', 'pl_trandurherr2',
+                'eng_prad_srad_ratio', 'pl_orbpererr1', 'pl_orbper',
+                'eng_period_duration_ratio', 'eng_duration_period_ratio',
+                'pl_tranmiderr1', 'pl_trandeperr2', 'pl_tranmid',
+                'pl_trandep', 'pl_trandurh', 'pl_trandeperr1',
+                'st_tmagerr2', 'st_disterr2', 'st_loggerr2',
+                'st_disterr1', 'st_dist', 'st_teff',
+                'st_tmagerr1', 'st_rad', 'st_tefferr2'
+            ]
+            model_data = {param: params.get(param) for param in toi_params}
+            
+        elif self.mission == 'kepler':
+            # Kepler KOI precision model parameters (14 parameters)
+            koi_params = [
+                'koi_prad', 'koi_dor', 'koi_ror', 'koi_num_transits',
+                'koi_duration_err1', 'koi_prad_err1', 'koi_period_err2',
+                'koi_srad_err1', 'koi_insol', 'eng_transit_probability',
+                'koi_model_snr', 'koi_srho', 'koi_max_mult_ev', 'koi_teq'
+            ]
+            model_data = {param: params.get(param) for param in koi_params}
+        
+        else:
+            model_data = {}
+        
+        return model_data
+    
+    def _build_json_output(self) -> dict:
+        """
+        Build JSON output as a dictionary (DTO pattern).
+        
+        Returns:
+            Dictionary containing mission, parameters, visualizations, and model data
         """
         self.logger.info("=" * 70)
-        self.logger.info("STEP 5/5: Saving JSON output")
+        self.logger.info("STEP 5/5: Building JSON output")
         self.logger.info("=" * 70)
-        
-        # Generate output filename
-        output_path = self.fits_path.parent / f"{self.fits_path.stem}_parameters.json"
         
         # Convert None to null and handle numpy types
         def serialize(obj):
@@ -1139,32 +1203,41 @@ class ExoplanetParameterProcessor:
             for error in validation['errors']:
                 self.logger.error(f"    - {error}")
         
+        # Extract model-specific data
+        model_data = self._extract_model_data(cleaned_params)
+        
         output_data = [{
             "mission": self.mission,
             "parameters": cleaned_params,
-            "visualizations": self.visualization_paths  # Include visualization paths
+            "visualizations": self.visualization_paths,
+            "data": [model_data]  # Model-ready parameters in array format
         }]
-        
-        # Save to file
-        with open(output_path, 'w') as f:
-            json.dump(output_data, f, indent=2)
         
         # Count non-null parameters
         non_null = sum(1 for v in cleaned_params.values() if v is not None)
         total = len(cleaned_params)
         
-        self.logger.info(f"  ✓ Saved {non_null}/{total} parameters to: {output_path.name}")
+        # Count model data parameters
+        model_non_null = sum(1 for v in model_data.values() if v is not None)
+        model_total = len(model_data)
+        
+        self.logger.info(f"  ✓ Built {non_null}/{total} parameters")
         self.logger.info(f"  ✓ Null parameters: {total - non_null}")
         self.logger.info(f"  ✓ Visualizations included: {len(self.visualization_paths)}")
+        self.logger.info(f"  ✓ Model data: {model_non_null}/{model_total} parameters ready for ML inference")
         
-        return str(output_path)
+        return output_data
     
-    def process(self) -> str:
+    def process(self, return_json: bool = True, print_json: bool = True) -> dict:
         """
         Main processing pipeline.
         
+        Args:
+            return_json: If True, returns JSON dict (DTO pattern). If False, returns None.
+            print_json: If True, prints formatted JSON to console.
+        
         Returns:
-            Path to output JSON file
+            Dictionary containing mission, parameters, visualizations, and model data (DTO)
         
         Raises:
             Exception: If processing fails at any step
@@ -1192,14 +1265,22 @@ class ExoplanetParameterProcessor:
             # Step 4: Generate visualizations
             self._generate_visualizations()
             
-            # Step 5: Save JSON
-            output_path = self._save_json()
+            # Step 5: Build JSON output (DTO)
+            output_json = self._build_json_output()
             
             self.logger.info("=" * 70)
             self.logger.info("✓✓✓ PROCESSING COMPLETE ✓✓✓")
             self.logger.info("=" * 70)
             
-            return output_path
+            # Print JSON to console if requested
+            if print_json:
+                print("\n" + "=" * 70)
+                print("JSON OUTPUT:")
+                print("=" * 70)
+                print(json.dumps(output_json, indent=2))
+                print("=" * 70 + "\n")
+            
+            return output_json if return_json else None
         
         except Exception as e:
             self.logger.error(f"✗✗✗ PROCESSING FAILED: {e} ✗✗✗")
@@ -1234,5 +1315,16 @@ if __name__ == "__main__":
         }
     )
     
-    output_json = processor.process()
-    print(f"\nOutput saved to: {output_json}")
+    # Process and get JSON output (DTO pattern - no file saved!)
+    # JSON will be automatically printed to console
+    result = processor.process()
+    
+    # Access the data
+    print(f"\n✓ Mission: {result[0]['mission']}")
+    print(f"✓ Parameters computed: {len(result[0]['parameters'])}")
+    print(f"✓ Visualizations generated: {len(result[0]['visualizations'])}")
+    print(f"✓ Model data ready: {len(result[0]['data'][0])} parameters")
+    
+    # Use the model data for ML inference
+    model_input = result[0]['data'][0]
+    print(f"\n✓ Ready to send to ML model: {list(model_input.keys())[:5]}...")
