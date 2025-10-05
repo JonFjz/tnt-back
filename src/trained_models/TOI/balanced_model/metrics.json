@@ -1,0 +1,142 @@
+{
+    "model_info": {
+        "model_name": "toi_balanced_complete",
+        "model_type": "TOI",
+        "optimization_type": "balanced",
+        "algorithm": "xgboost",
+        "beta": 1.0,
+        "threshold": 0.55,
+        "weight_value": 1.0,
+        "false_positive_weight": 1.0,
+        "false_negative_weight": 1.0,
+        "features": [
+            "pl_trandurherr1",
+            "eng_transit_probability",
+            "pl_trandurherr2",
+            "eng_prad_srad_ratio",
+            "pl_orbpererr1",
+            "pl_orbper",
+            "eng_period_duration_ratio",
+            "eng_duration_period_ratio",
+            "pl_tranmiderr1",
+            "pl_trandeperr2",
+            "pl_tranmid",
+            "pl_trandep",
+            "pl_trandurh",
+            "pl_trandeperr1",
+            "st_tmagerr2",
+            "st_disterr2",
+            "st_loggerr2",
+            "st_disterr1",
+            "st_dist",
+            "st_teff",
+            "st_tmagerr1",
+            "st_rad",
+            "st_tefferr2"
+        ],
+        "feature_count": 23,
+        "class_distribution": {
+            "1": 1267,
+            "0": 1197
+        },
+        "training_params": {
+            "booster": "gbtree",
+            "objective": "binary:logistic",
+            "max_depth": 4,
+            "learning_rate": 0.1,
+            "min_child_weight": 2,
+            "gamma": 0,
+            "subsample": 0.8,
+            "colsample_bytree": 0.8,
+            "colsample_bylevel": 1.0,
+            "colsample_bynode": 1.0,
+            "reg_lambda": 1.0,
+            "reg_alpha": 0.01,
+            "n_estimators": 200,
+            "scale_pos_weight": 1.0,
+            "random_state": 42,
+            "tree_method": "auto",
+            "importance_type": "gain",
+            "max_delta_step": 0,
+            "grow_policy": "depthwise"
+        }
+    },
+    "evaluation": {
+        "training": {
+            "dataset": "training",
+            "metrics": {
+                "accuracy": 0.9924593967517401,
+                "precision": 0.9965870307167235,
+                "recall": 0.9887133182844243,
+                "f1": 0.9926345609065156,
+                "f1.0": 0.9926345609065156,
+                "roc_auc": 0.999687528620762
+            },
+            "confusion_matrix": {
+                "true_negative": 835,
+                "false_positive": 3,
+                "false_negative": 10,
+                "true_positive": 876
+            }
+        },
+        "validation": {
+            "dataset": "validation",
+            "metrics": {
+                "accuracy": 0.8864864864864865,
+                "precision": 0.8737373737373737,
+                "recall": 0.9105263157894737,
+                "f1": 0.8917525773195877,
+                "f1.0": 0.8917525773195877,
+                "roc_auc": 0.9380116959064327
+            },
+            "confusion_matrix": {
+                "true_negative": 155,
+                "false_positive": 25,
+                "false_negative": 17,
+                "true_positive": 173
+            }
+        },
+        "test": {
+            "dataset": "test",
+            "metrics": {
+                "accuracy": 0.8729729729729729,
+                "precision": 0.8870967741935484,
+                "recall": 0.8638743455497382,
+                "f1": 0.8753315649867374,
+                "f1.0": 0.8753315649867374,
+                "roc_auc": 0.9499254146070374
+            },
+            "confusion_matrix": {
+                "true_negative": 158,
+                "false_positive": 21,
+                "false_negative": 26,
+                "true_positive": 165
+            }
+        }
+    },
+    "feature_importance": {
+        "eng_transit_probability": 0.09543269127607346,
+        "pl_trandurherr1": 0.08848121762275696,
+        "st_disterr2": 0.05354510620236397,
+        "st_rad": 0.050108227878808975,
+        "st_disterr1": 0.04899590089917183,
+        "pl_orbper": 0.046121757477521896,
+        "pl_trandep": 0.045937180519104004,
+        "st_teff": 0.04544482007622719,
+        "eng_prad_srad_ratio": 0.043586019426584244,
+        "pl_orbpererr1": 0.041288893669843674,
+        "st_tefferr2": 0.040322400629520416,
+        "eng_period_duration_ratio": 0.037151798605918884,
+        "st_dist": 0.03673793002963066,
+        "pl_trandurh": 0.03630921617150307,
+        "pl_trandeperr1": 0.033809881657361984,
+        "st_tmagerr1": 0.03368053957819939,
+        "pl_tranmid": 0.033209726214408875,
+        "pl_tranmiderr1": 0.03288276121020317,
+        "eng_duration_period_ratio": 0.03243608772754669,
+        "st_loggerr2": 0.03217160701751709,
+        "pl_trandurherr2": 0.032060373574495316,
+        "pl_trandeperr2": 0.030672414228320122,
+        "st_tmagerr2": 0.02961343340575695
+    }
+}

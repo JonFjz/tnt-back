@@ -1,12 +1,14 @@
 {
     "model_info": {
-        "model_name": "recall_model",
+        "model_name": "toi_recall_complete",
         "model_type": "TOI",
         "optimization_type": "recall",
         "algorithm": "lightgbm",
         "beta": 2.0,
-        "threshold": 0.3,
-        "weight_value": 350.0,
+        "threshold": 0.35,
+        "weight_value": 450.0,
+        "false_positive_weight": 1.0,
+        "false_negative_weight": 450.0,
         "features": [
             "pl_trandurherr1",
             "eng_transit_probability",
@@ -36,84 +38,107 @@
         "class_distribution": {
             "1": 1267,
             "0": 1197
+        },
+        "training_params": {
+            "boosting_type": "gbdt",
+            "metric": "auc",
+            "learning_rate": 0.1,
+            "num_leaves": 31,
+            "max_depth": 6,
+            "min_data_in_leaf": 1,
+            "min_child_samples": 1,
+            "min_child_weight": 0.001,
+            "feature_fraction": 0.9,
+            "bagging_fraction": 0.8,
+            "bagging_freq": 5,
+            "lambda_l1": 0.1,
+            "lambda_l2": 0.2,
+            "scale_pos_weight": 20.0,
+            "subsample_for_bin": 200000,
+            "subsample": 1.0,
+            "min_split_gain": 0.0,
+            "seed": 42,
+            "verbose": -1,
+            "deterministic": false,
+            "early_stopping_round": null
         }
     },
     "evaluation": {
         "training": {
             "dataset": "training",
             "metrics": {
-                "accuracy": 0.622969837587007,
-                "precision": 0.577023498694517,
-                "recall": 0.9977426636568849,
-                "f1": 0.7311827956989247,
-                "f2.0": 0.8707643814026793,
-                "roc_auc": 0.7107585781474757
+                "accuracy": 0.9541763341067285,
+                "precision": 0.9181347150259067,
+                "recall": 1.0,
+                "f1": 0.9573203673689897,
+                "f2.0": 0.9824794854734975,
+                "roc_auc": 0.9987851328272733
             },
             "confusion_matrix": {
-                "true_negative": 190,
-                "false_positive": 648,
-                "false_negative": 2,
-                "true_positive": 884
+                "true_negative": 759,
+                "false_positive": 79,
+                "false_negative": 0,
+                "true_positive": 886
             }
         },
         "validation": {
             "dataset": "validation",
             "metrics": {
-                "accuracy": 0.6189189189189189,
-                "precision": 0.574468085106383,
-                "recall": 0.9947368421052631,
-                "f1": 0.7283236994219653,
-                "f2.0": 0.8677685950413223,
-                "roc_auc": 0.7265497076023392
+                "accuracy": 0.8594594594594595,
+                "precision": 0.8053097345132744,
+                "recall": 0.9578947368421052,
+                "f1": 0.875,
+                "f2.0": 0.922920892494929,
+                "roc_auc": 0.9378654970760234
             },
             "confusion_matrix": {
-                "true_negative": 40,
-                "false_positive": 140,
-                "false_negative": 1,
-                "true_positive": 189
+                "true_negative": 136,
+                "false_positive": 44,
+                "false_negative": 8,
+                "true_positive": 182
             }
         },
         "test": {
             "dataset": "test",
             "metrics": {
-                "accuracy": 0.6486486486486487,
-                "precision": 0.5950155763239875,
-                "recall": 1.0,
-                "f1": 0.74609375,
-                "f2.0": 0.880184331797235,
-                "roc_auc": 0.711764017666501
+                "accuracy": 0.8486486486486486,
+                "precision": 0.8054298642533937,
+                "recall": 0.9319371727748691,
+                "f1": 0.8640776699029126,
+                "f2.0": 0.9035532994923858,
+                "roc_auc": 0.9431981046535436
             },
             "confusion_matrix": {
-                "true_negative": 49,
-                "false_positive": 130,
-                "false_negative": 0,
-                "true_positive": 191
+                "true_negative": 136,
+                "false_positive": 43,
+                "false_negative": 13,
+                "true_positive": 178
             }
         }
     },
     "feature_importance": {
-        "pl_trandurherr2": 777.4577046334743,
-        "pl_orbpererr1": 660.068311214447,
-        "st_disterr2": 504.37939453125,
-        "st_rad": 484.64600372314453,
-        "eng_transit_probability": 364.0833528637886,
-        "st_teff": 90.54891061782837,
-        "st_tmagerr2": 85.18290328979492,
-        "eng_period_duration_ratio": 2.6264700889587402,
-        "pl_trandurherr1": 0.0,
-        "eng_prad_srad_ratio": 0.0,
-        "pl_orbper": 0.0,
-        "eng_duration_period_ratio": 0.0,
-        "pl_tranmiderr1": 0.0,
-        "pl_trandeperr2": 0.0,
-        "pl_tranmid": 0.0,
-        "pl_trandep": 0.0,
-        "pl_trandurh": 0.0,
-        "pl_trandeperr1": 0.0,
-        "st_loggerr2": 0.0,
-        "st_disterr1": 0.0,
-        "st_dist": 0.0,
-        "st_tmagerr1": 0.0,
-        "st_tefferr2": 0.0
+        "eng_transit_probability": 198.68212076835334,
+        "pl_trandurherr1": 130.46299197059125,
+        "eng_prad_srad_ratio": 112.14606008678675,
+        "pl_trandep": 112.06587344408035,
+        "st_rad": 101.7053093612194,
+        "pl_tranmiderr1": 96.35123369662324,
+        "pl_trandurh": 93.46295408951119,
+        "pl_tranmid": 92.41271080449224,
+        "st_tefferr2": 87.09064115211368,
+        "st_disterr2": 86.52836383134127,
+        "pl_orbper": 83.4690690971911,
+        "pl_trandeperr2": 78.78212877362967,
+        "st_teff": 77.4384047249332,
+        "eng_period_duration_ratio": 76.77806247025728,
+        "st_dist": 74.4244179315865,
+        "pl_orbpererr1": 73.38664033636451,
+        "pl_trandurherr2": 49.13749770820141,
+        "st_disterr1": 34.04618189488974,
+        "eng_duration_period_ratio": 26.671753108501434,
+        "st_loggerr2": 21.737318025901914,
+        "pl_trandeperr1": 12.335319384932518,
+        "st_tmagerr2": 11.870298381953035,
+        "st_tmagerr1": 1.2516779825091362
     }
 }

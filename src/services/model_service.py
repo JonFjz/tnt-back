@@ -6,6 +6,9 @@ import os
 import pickle
 import json
 from datetime import datetime
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 from sklearn.metrics import (
     fbeta_score, accuracy_score, precision_score,
     recall_score, f1_score, roc_auc_score, confusion_matrix
@@ -41,14 +44,15 @@ class ModelService:
                 "algorithm": "lightgbm"
             }
         }
-    
+
     def train_model_user(self, data):
         """
         Trains a machine learning model for planet classification using pre-loaded datasets.
+        All model parameters can be customized.
         
         Args:
             data: JSON payload with model parameters
-            
+                
         Returns:
             Dictionary with training results and model information
         """
@@ -69,11 +73,11 @@ class ModelService:
             if not os.path.exists(dataset_path):
                 print(f"Dataset not found at: {dataset_path}")
                 # Try alternative path
-                dataset_path = f"src/utils/datasets/{model_type}.csv"
+                dataset_path = f"utils/datasets/{model_type}.csv"
                 if not os.path.exists(dataset_path):
                     return {
                         "status": "error",
-                        "message": f"Dataset file not found for {model_type}. Looked in: '../utils/datasets/' and 'utils/datasets/'"
+                        "message": f"Dataset file not found for {model_type}. Looked in: 'src/utils/datasets/' and 'utils/datasets/'"
                     }, 404
                     
             print(f"Loading dataset from: {dataset_path}")
@@ -149,12 +153,19 @@ class ModelService:
                     "message": f"Only one class found in target column. Need at least 2 classes."
                 }, 400
                 
+            # Get all data preparation parameters with defaults
+            do_oversample = data.get('do_oversample', True)
+            min_samples_for_oversample = data.get('min_samples_for_oversample', 5)
+            test_size = data.get('test_size', 0.3)
+            validation_size = data.get('validation_size', 0.5)
+            random_state = data.get('random_state', 42)
+            
             # Handle class imbalance by oversampling the minority class
-            if len(class_counts) == 2:
+            if do_oversample and len(class_counts) == 2:
                 majority_class = class_counts.idxmax()
                 minority_class = class_counts.idxmin()
                 
-                if class_counts[minority_class] < 5:  # If minority class has very few samples
+                if class_counts[minority_class] < min_samples_for_oversample:
                     # Oversample minority class
                     majority_data = df[df[target_column] == majority_class]
                     minority_data = df[df[target_column] == minority_class]
@@ -164,7 +175,7 @@ class ModelService:
                         minority_data,
                         replace=True,     # sample with replacement
                         n_samples=len(majority_data),  # match majority class
-                        random_state=42
+                        random_state=random_state
                     )
                     
                     # Combine majority with upsampled minority
@@ -179,111 +190,205 @@ class ModelService:
             # Split data with stratification
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y,
-                test_size=0.3,
-                random_state=42,
+                test_size=test_size,
+                random_state=random_state,
                 stratify=y
             )
             
             X_val, X_test, y_val, y_test = train_test_split(
                 X_test, y_test,
-                test_size=0.5,
-                random_state=42,
+                test_size=validation_size,
+                random_state=random_state,
                 stratify=y_test
             )
             
             print(f"Data split into train ({len(X_train)}), validation ({len(X_val)}), test ({len(X_test)}) sets")
 
-            # Get optimization settings
-            settings = self.OPTIMIZATION_SETTINGS[optimization_type]
+            # Get base settings from optimization type
+            settings = self.OPTIMIZATION_SETTINGS[optimization_type].copy()
 
-            # Get custom parameters
-            custom_params = data.get('custom_params', {})
+            # Allow overriding of core settings
+            beta = data.get('beta', settings['beta'])
+            threshold = data.get('threshold', settings['threshold'])
+            settings['beta'] = beta
+            settings['threshold'] = threshold
 
-            # Get weight for false positives/negatives
-            weight_value = data.get('weight_value', None)
-            if weight_value is None:
-                weight_value = 1.8 if optimization_type == "precision" else 250
+            # Get algorithm - allow overriding but default based on optimization type
+            algorithm = data.get('algorithm', settings['algorithm'])
+            settings['algorithm'] = algorithm
 
-            # Train model based on optimization type
-            if optimization_type == "balanced":
-                # XGBoost with balanced settings
+            # Error penalty weights
+            false_positive_weight = data.get('false_positive_weight', 1.8 if optimization_type == 'precision' else 1.0)
+            false_negative_weight = data.get('false_negative_weight', 450 if optimization_type == 'recall' else 1.0)
+            weight_value = data.get('weight_value', 
+                                false_positive_weight if optimization_type == 'precision' 
+                                else false_negative_weight if optimization_type == 'recall'
+                                else 1.0)
+
+            # Train model based on algorithm selection
+            if algorithm == 'xgboost':
+                # XGBoost parameters - expose ALL parameters
                 params = {
-                    'booster': 'gbtree',
-                    'objective': 'binary:logistic',
-                    'max_depth': custom_params.get('max_depth', 4),
-                    'learning_rate': custom_params.get('learning_rate', 0.1),
-                    'min_child_weight': custom_params.get('min_child_weight', 2),
-                    'subsample': custom_params.get('subsample', 0.8),
-                    'colsample_bytree': custom_params.get('colsample_bytree', 0.8),
-                    'reg_lambda': custom_params.get('reg_lambda', 1.0),
-                    'reg_alpha': custom_params.get('reg_alpha', 0.01),
-                    'n_estimators': custom_params.get('n_estimators', 200),
-                    'random_state': 42,
-                    'scale_pos_weight': max(custom_params.get('scale_pos_weight', 1.0), 1.0)
+                    'booster': data.get('booster', 'gbtree'),
+                    'objective': data.get('objective', 'binary:logistic'),
+                    'max_depth': data.get('max_depth', 4),
+                    'learning_rate': data.get('learning_rate', 0.1),
+                    'min_child_weight': data.get('min_child_weight', 2),
+                    'gamma': data.get('gamma', 0),
+                    'subsample': data.get('subsample', 0.8),
+                    'colsample_bytree': data.get('colsample_bytree', 0.8),
+                    'colsample_bylevel': data.get('colsample_bylevel', 1.0),
+                    'colsample_bynode': data.get('colsample_bynode', 1.0),
+                    'reg_lambda': data.get('reg_lambda', 1.0),
+                    'reg_alpha': data.get('reg_alpha', 0.01),
+                    'n_estimators': data.get('n_estimators', 200),
+                    'scale_pos_weight': data.get('scale_pos_weight', settings['scale_pos_weight']),
+                    'random_state': data.get('random_state', random_state),
+                    'tree_method': data.get('tree_method', 'auto'),
+                    'importance_type': data.get('importance_type', 'gain'),
+                    'max_delta_step': data.get('max_delta_step', 0),
+                    'grow_policy': data.get('grow_policy', 'depthwise')
                 }
-
+                
+                # Create early stopping callback if requested
+                early_stopping_rounds = data.get('early_stopping_rounds', None)
+                callbacks = []
+                if early_stopping_rounds:
+                    callbacks = [xgb.callback.EarlyStopping(rounds=early_stopping_rounds, save_best=True)]
+                
                 print(f"Training XGBoost model with parameters: {params}")
                 model = xgb.XGBClassifier(**params)
-                model.fit(X_train, y_train)
+                
+                eval_set = [(X_train, y_train), (X_val, y_val)] if early_stopping_rounds else None
+                if eval_set:
+                    model.fit(X_train, y_train, eval_set=eval_set)
+                else:
+                    model.fit(X_train, y_train)
+                
+            elif algorithm == 'lightgbm':
+                # Create custom asymmetric objective function if requested
+                use_custom_objective = data.get('use_custom_objective', True)
+                
+                if use_custom_objective:
+                    # Custom asymmetric objective function
+                    def custom_asymmetric_objective(preds, train_data):
+                        y_true = train_data.get_label()
+                        y_pred = 1.0 / (1.0 + np.exp(-preds))
+                        grad = y_pred - y_true
+                        hess = y_pred * (1.0 - y_pred)
+        
+                        if optimization_type == "precision":
+                            grad = np.where(y_true < 0.5, weight_value * grad, grad)
+                            hess = np.where(y_true < 0.5, weight_value * hess, hess)
+                        else:  # recall or default
+                            grad = np.where(y_true > 0.5, weight_value * grad, grad)
+                            hess = np.where(y_true > 0.5, weight_value * hess, hess)
+        
+                        return grad, hess
+                    
+                    objective = custom_asymmetric_objective
+                else:
+                    objective = data.get('objective', 'binary')
 
-            else:  # precision or recall
-                # Custom asymmetric objective function
-                def custom_asymmetric_objective(preds, train_data):
-                    y_true = train_data.get_label()
-                    y_pred = 1.0 / (1.0 + np.exp(-preds))
-                    grad = y_pred - y_true
-                    hess = y_pred * (1.0 - y_pred)
-
-                    if optimization_type == "precision":
-                        grad = np.where(y_true < 0.5, weight_value * grad, grad)
-                        hess = np.where(y_true < 0.5, weight_value * hess, hess)
-                    else:  # recall
-                        grad = np.where(y_true > 0.5, weight_value * grad, grad)
-                        hess = np.where(y_true > 0.5, weight_value * hess, hess)
-
-                    return grad, hess
-
-                # LightGBM parameters with constraints for small datasets
+                # LightGBM parameters - expose ALL parameters
                 params = {
-                    'metric': custom_params.get('metric', 'auc'),
-                    'learning_rate': custom_params.get('learning_rate', 0.1),
-                    'num_leaves': min(custom_params.get('num_leaves', 31), 7),
-                    'max_depth': min(custom_params.get('max_depth', 6), 3),
-                    'lambda_l1': custom_params.get('lambda_l1', 0.1),
-                    'lambda_l2': custom_params.get('lambda_l2', 0.2),
-                    'feature_fraction': custom_params.get('feature_fraction', 0.9),
-                    'bagging_fraction': custom_params.get('bagging_fraction', 0.8),
-                    'bagging_freq': custom_params.get('bagging_freq', 5),
-                    'scale_pos_weight': max(custom_params.get('scale_pos_weight', settings['scale_pos_weight']), 1.0),
-                    'seed': 42,
-                    'objective': custom_asymmetric_objective,
-                    'min_data_in_leaf': 1,  # Minimum samples per leaf
-                    'min_child_samples': 1  # Minimum samples per child
+                    'boosting_type': data.get('boosting_type', 'gbdt'),
+                    'objective': objective,
+                    'metric': data.get('metric', 'auc'),
+                    'learning_rate': data.get('learning_rate', 0.1),
+                    'num_leaves': data.get('num_leaves', 31),
+                    'max_depth': data.get('max_depth', 6),
+                    'min_data_in_leaf': data.get('min_data_in_leaf', 1),
+                    'min_child_samples': data.get('min_child_samples', 1),
+                    'min_child_weight': data.get('min_child_weight', 1e-3),
+                    'feature_fraction': data.get('feature_fraction', 0.9),
+                    'bagging_fraction': data.get('bagging_fraction', 0.8),
+                    'bagging_freq': data.get('bagging_freq', 5),
+                    'lambda_l1': data.get('lambda_l1', 0.1),
+                    'lambda_l2': data.get('lambda_l2', 0.2),
+                    'scale_pos_weight': data.get('scale_pos_weight', settings['scale_pos_weight']),
+                    'subsample_for_bin': data.get('subsample_for_bin', 200000),
+                    'subsample': data.get('subsample', 1.0),
+                    'min_split_gain': data.get('min_split_gain', 0.0),
+                    'seed': data.get('seed', random_state),
+                    'verbose': data.get('verbose', -1),
+                    'deterministic': data.get('deterministic', False),
+                    'early_stopping_round': data.get('early_stopping_round', None)
                 }
-
+                
+                # Remove objective from params if it's a custom function
+                if use_custom_objective:
+                    if 'objective' in params and callable(params['objective']):
+                        del params['objective']
+        
                 print(f"Training LightGBM model with parameters: {params}")
                 # Create LightGBM datasets
-                train_data = lgb.Dataset(X_train, label=y_train)
-                valid_data = lgb.Dataset(X_val, label=y_val, reference=train_data)
-
+                train_data_lgb = lgb.Dataset(X_train, label=y_train)
+                valid_data_lgb = lgb.Dataset(X_val, label=y_val, reference=train_data_lgb)
+        
+                # Set up training parameters
+                num_boost_round = data.get('num_boost_round', 1000)
+                early_stopping_rounds = data.get('early_stopping_rounds', 50)
+                verbose_eval = data.get('verbose_eval', False)
+                
                 # Train LightGBM model with early stopping
                 model = lgb.train(
                     params,
-                    train_data,
-                    num_boost_round=100,
-                    valid_sets=[valid_data],
+                    train_data_lgb,
+                    num_boost_round=num_boost_round,
+                    valid_sets=[valid_data_lgb],
                     callbacks=[
-                        lgb.early_stopping(stopping_rounds=10, verbose=True)
-                    ]
+                        lgb.early_stopping(stopping_rounds=early_stopping_rounds, verbose=verbose_eval)
+                    ] if early_stopping_rounds else None
                 )
+            else:
+                return {
+                    "status": "error",
+                    "message": f"Unsupported algorithm: {algorithm}. Use 'xgboost' or 'lightgbm'."
+                }, 400
 
             # Create threshold for classification
-            threshold = settings['threshold']
+            threshold = data.get('threshold', settings['threshold'])
+
+            # Option to find optimal threshold
+            find_optimal_threshold = data.get('find_optimal_threshold', False)
+            if find_optimal_threshold:
+                print("Finding optimal classification threshold...")
+                # Test a range of thresholds
+                thresholds = np.linspace(0.1, 0.9, 17)  # 0.1 to 0.9 in 0.05 increments
+                threshold_results = []
+                
+                for thresh in thresholds:
+                    if algorithm == 'xgboost':
+                        y_pred_proba = model.predict_proba(X_val)[:, 1]
+                    else:
+                        y_pred_proba = model.predict(X_val)
+                        
+                    y_pred = (y_pred_proba >= thresh).astype(int)
+                    
+                    if sum(y_pred) > 0:  # Avoid division by zero
+                        precision = precision_score(y_val, y_pred, zero_division=0)
+                        recall = recall_score(y_val, y_pred, zero_division=0)
+                        f_beta_score_val = fbeta_score(y_val, y_pred, beta=beta, zero_division=0)
+                        threshold_results.append((thresh, precision, recall, f_beta_score_val))
+                
+                if threshold_results:
+                    # Find threshold with best F-beta score
+                    threshold_df = pd.DataFrame(
+                        threshold_results,
+                        columns=['Threshold', 'Precision', 'Recall', f'F{beta} Score']
+                    )
+                    
+                    best_idx = threshold_df[f'F{beta} Score'].idxmax()
+                    threshold = threshold_df.iloc[best_idx]['Threshold']
+                    print(f"Optimal threshold found: {threshold:.2f}")
+                else:
+                    print("Could not find optimal threshold, using default.")
 
             # Evaluate model
             def evaluate_dataset(X, y, dataset_name):
                 try:
-                    if optimization_type == "balanced":
+                    if algorithm == 'xgboost':
                         y_pred_proba = model.predict_proba(X)[:, 1]
                         y_pred = (y_pred_proba >= threshold).astype(int)
                     else:
@@ -295,7 +400,7 @@ class ModelService:
                     precision = precision_score(y, y_pred, zero_division=0)
                     recall = recall_score(y, y_pred, zero_division=0)
                     f1 = f1_score(y, y_pred, zero_division=0)
-                    f_beta = fbeta_score(y, y_pred, beta=settings['beta'], zero_division=0)
+                    f_beta = fbeta_score(y, y_pred, beta=beta, zero_division=0)
                     
                     # Calculate ROC AUC safely
                     try:
@@ -314,7 +419,7 @@ class ModelService:
                             'precision': float(precision),
                             'recall': float(recall),
                             'f1': float(f1),
-                            f'f{settings["beta"]}': float(f_beta),
+                            f'f{beta}': float(f_beta),
                             'roc_auc': float(roc_auc)
                         },
                         'confusion_matrix': {
@@ -333,7 +438,7 @@ class ModelService:
                             'precision': 0.0,
                             'recall': 0.0,
                             'f1': 0.0,
-                            f'f{settings["beta"]}': 0.0,
+                            f'f{beta}': 0.0,
                             'roc_auc': 0.5
                         },
                         'confusion_matrix': {
@@ -352,7 +457,7 @@ class ModelService:
 
             # Feature importance
             try:
-                if optimization_type == "balanced":
+                if algorithm == 'xgboost':
                     importance = model.feature_importances_
                 else:
                     importance = model.feature_importance(importance_type='gain')
@@ -369,18 +474,84 @@ class ModelService:
                 print(f"Error calculating feature importance: {e}")
                 feature_importance = {feature: 1.0 for feature in features_to_use}
 
+            # Get visualization options
+            create_visualizations = data.get('create_visualizations', True)
+            visualization_path = data.get('visualization_path', os.path.join("src", "visualizations"))
+            
+            # Create visualizations if requested
+            if create_visualizations:
+                os.makedirs(visualization_path, exist_ok=True)
+                
+                # Metrics comparison
+                metrics_df = pd.DataFrame({
+                    'Training': [
+                        train_eval['metrics']['accuracy'],
+                        train_eval['metrics']['precision'],
+                        train_eval['metrics']['recall'],
+                        train_eval['metrics']['f1'],
+                        train_eval['metrics'][f'f{beta}'],
+                        train_eval['metrics']['roc_auc']
+                    ],
+                    'Validation': [
+                        val_eval['metrics']['accuracy'],
+                        val_eval['metrics']['precision'],
+                        val_eval['metrics']['recall'],
+                        val_eval['metrics']['f1'],
+                        val_eval['metrics'][f'f{beta}'],
+                        val_eval['metrics']['roc_auc']
+                    ],
+                    'Test': [
+                        test_eval['metrics']['accuracy'],
+                        test_eval['metrics']['precision'],
+                        test_eval['metrics']['recall'],
+                        test_eval['metrics']['f1'],
+                        test_eval['metrics'][f'f{beta}'],
+                        test_eval['metrics']['roc_auc']
+                    ]
+                }, index=['Accuracy', 'Precision', 'Recall', 'F1 Score', f'F{beta} Score', 'ROC AUC'])
+                
+                try:
+                    plt.figure(figsize=(10, 6))
+                    metrics_df.plot(kind='bar')
+                    plt.title(f'{model_type} Model Performance (Optimization: {optimization_type})')
+                    plt.ylabel('Score')
+                    plt.ylim([0, 1.05])
+                    plt.grid(axis='y', linestyle='--', alpha=0.7)
+                    plt.savefig(os.path.join(visualization_path, f'{model_name}_metrics.png'))
+                    plt.close()
+                    
+                    # Feature importance plot
+                    if len(feature_importance) > 0:
+                        plt.figure(figsize=(12, 8))
+                        importance_df = pd.DataFrame({
+                            'Feature': list(feature_importance.keys()),
+                            'Importance': list(feature_importance.values())
+                        }).head(20)  # Top 20 features
+                        
+                        plt.barh(importance_df['Feature'], importance_df['Importance'])
+                        plt.title('Top 20 Feature Importance')
+                        plt.xlabel('Importance Score')
+                        plt.tight_layout()
+                        plt.savefig(os.path.join(visualization_path, f'{model_name}_importance.png'))
+                        plt.close()
+                except Exception as vis_error:
+                    print(f"Error creating visualizations: {vis_error}")
+
             # Prepare model info and evaluation data for saving
             model_info = {
                 'model_name': model_name,
                 'model_type': model_type,
                 'optimization_type': optimization_type,
-                'algorithm': settings['algorithm'],
-                'beta': float(settings['beta']),
+                'algorithm': algorithm,
+                'beta': float(beta),
                 'threshold': float(threshold),
                 'weight_value': float(weight_value),
+                'false_positive_weight': float(false_positive_weight),
+                'false_negative_weight': float(false_negative_weight),
                 'features': features_to_use,
                 'feature_count': len(features_to_use),
-                'class_distribution': {str(k): int(v) for k, v in y.value_counts().items()}
+                'class_distribution': {str(k): int(v) for k, v in y.value_counts().items()},
+                'training_params': params
             }
             
             evaluation_data = {
@@ -415,10 +586,11 @@ class ModelService:
                 'features': features_to_use,
                 'settings': settings,
                 'threshold': threshold,
-                'algorithm': settings['algorithm'],
+                'algorithm': algorithm,
                 'model_info': model_info,
                 'evaluation': evaluation_data,
-                'feature_importance': feature_importance
+                'feature_importance': feature_importance,
+                'params': params
             }
             
             with open(custom_model_path, 'wb') as f:
