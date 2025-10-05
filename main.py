@@ -52,20 +52,19 @@ def search_stars():
 def analyze():
     mission = (request.args.get("mission") or "").strip()
     target_id = (request.args.get("id") or "").strip()
-    Oilookup = request.args.get("Oilookup")
+    oi_lookup = request.args.get("oi_lookup", default=1, type=int)
     parameters = request.args.get("parameters") or "{}"
 
     file = request.files.get("file")
     if file:
         file_processor = FileProcessor(file)
         
-    response = StarProcessor(mission, target_id, parameters, Oilookup, file_processor.file_path if file else None)
+    response = StarProcessor(mission, target_id, oi_lookup, parameters,  file_processor.file_path if file else None)
     
     #call drings function to analyze the data
-
     # result = model_service.predict(data)
-        
-    #     # Check if result is tuple with error status
+    
+    # #     # Check if result is tuple with error status
     # if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], int):
     #         return jsonify(result[0]), result[1]
         

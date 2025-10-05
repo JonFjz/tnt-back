@@ -4,11 +4,11 @@ from src.fits_downloader import LatestFITSFetcher
 from src.stellar_data_fetcher import StarMetaFetcher
 
 class StarProcessor:
-    def __init__(self, mission, target_id, parameters=None, OIlookup=1, file_path=None):
+    def __init__(self, mission, target_id, oi_lookup, parameters=None,  file_path=None):
         self.mission = mission
         self.target_id = target_id
         self.parameters = parameters
-        self.OIlookup = OIlookup
+        self.oi_lookup  = oi_lookup
         self.file_path = file_path
         self.response= None
         self.found = None
@@ -17,17 +17,14 @@ class StarProcessor:
             self.found = self.foundPlanet()
 
         # First attempt to get data via OI lookup if enabled
-        if self.OIlookup:
+        if self.oi_lookup:
             self.response = self.checkOI()
           
 
-        # if self.response is None:
-        #     self.getFitsData()
-        #     self.getData()  # Now we need to call this explicitly
-            # if self.mission.lower() == "kepler":
-            #     self.processKIC()
-            # elif self.mission.lower() == "tess":
-            #     self.processTOI()
+        if self.response is None:
+            self.getFitsData()
+            self.getData() 
+           
 
         # Check if the target exists in TOI and KOI
         # If not for KOI, get the data for TOI, download it, saves which was the latest that it used and save it in the data folder
