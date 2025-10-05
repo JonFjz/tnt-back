@@ -1,0 +1,126 @@
+{
+    "model_info": {
+        "model_name": "koi_precision_complete",
+        "model_type": "KOI",
+        "optimization_type": "precision",
+        "algorithm": "lightgbm",
+        "beta": 0.5,
+        "threshold": 0.65,
+        "weight_value": 1.8,
+        "false_positive_weight": 1.8,
+        "false_negative_weight": 1.0,
+        "features": [
+            "koi_prad",
+            "koi_dor",
+            "koi_ror",
+            "koi_num_transits",
+            "koi_duration_err1",
+            "koi_prad_err1",
+            "koi_period_err2",
+            "koi_srad_err1",
+            "koi_insol",
+            "eng_transit_probability",
+            "koi_model_snr",
+            "koi_srho",
+            "koi_max_mult_ev",
+            "koi_teq"
+        ],
+        "feature_count": 14,
+        "class_distribution": {
+            "0": 4839,
+            "1": 4725
+        },
+        "training_params": {
+            "boosting_type": "gbdt",
+            "metric": "auc",
+            "learning_rate": 0.1,
+            "num_leaves": 31,
+            "max_depth": 6,
+            "min_data_in_leaf": 1,
+            "min_child_samples": 1,
+            "min_child_weight": 0.001,
+            "feature_fraction": 0.9,
+            "bagging_fraction": 0.8,
+            "bagging_freq": 5,
+            "lambda_l1": 0.1,
+            "lambda_l2": 0.2,
+            "scale_pos_weight": 3.0,
+            "subsample_for_bin": 200000,
+            "subsample": 1.0,
+            "min_split_gain": 0.0,
+            "seed": 42,
+            "verbose": -1,
+            "deterministic": false,
+            "early_stopping_round": null
+        }
+    },
+    "evaluation": {
+        "training": {
+            "dataset": "training",
+            "metrics": {
+                "accuracy": 0.8731700029877503,
+                "precision": 0.932441942294159,
+                "recall": 0.8013305110371939,
+                "f1": 0.8619287689055131,
+                "f0.5": 0.9028960817717206,
+                "roc_auc": 0.9626297975440882
+            },
+            "confusion_matrix": {
+                "true_negative": 3195,
+                "false_positive": 192,
+                "false_negative": 657,
+                "true_positive": 2650
+            }
+        },
+        "validation": {
+            "dataset": "validation",
+            "metrics": {
+                "accuracy": 0.8299651567944251,
+                "precision": 0.8987993138936535,
+                "recall": 0.7390691114245416,
+                "f1": 0.8111455108359134,
+                "f0.5": 0.8615586977967774,
+                "roc_auc": 0.9225706869956133
+            },
+            "confusion_matrix": {
+                "true_negative": 667,
+                "false_positive": 59,
+                "false_negative": 185,
+                "true_positive": 524
+            }
+        },
+        "test": {
+            "dataset": "test",
+            "metrics": {
+                "accuracy": 0.8299651567944251,
+                "precision": 0.8934010152284264,
+                "recall": 0.7447108603667136,
+                "f1": 0.8123076923076923,
+                "f0.5": 0.8590953465668728,
+                "roc_auc": 0.9243317907890289
+            },
+            "confusion_matrix": {
+                "true_negative": 663,
+                "false_positive": 63,
+                "false_negative": 181,
+                "true_positive": 528
+            }
+        }
+    },
+    "feature_importance": {
+        "koi_prad": 1715.5430206656456,
+        "koi_num_transits": 771.6217284202576,
+        "koi_dor": 577.4515056908131,
+        "koi_duration_err1": 450.570817142725,
+        "koi_model_snr": 212.2418806552887,
+        "koi_ror": 201.34922310709953,
+        "koi_period_err2": 198.4831329882145,
+        "koi_srad_err1": 187.9096932709217,
+        "koi_srho": 181.42133450508118,
+        "koi_max_mult_ev": 151.77313375473022,
+        "koi_insol": 134.3654690682888,
+        "koi_prad_err1": 97.010662779212,
+        "eng_transit_probability": 78.87850198149681,
+        "koi_teq": 42.22380155324936
+    }
+}
