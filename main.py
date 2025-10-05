@@ -7,6 +7,7 @@ from src.services.model_service import ModelService
 from src.services.mast_search_service import MastSearchService
 from src.data_mapper import build_model_payload_from_row
 from src.exoplanet_processor import ExoplanetParameterProcessor
+from src.data_mapper_manual import build_payload
 import os
 
 app = Flask(__name__)
@@ -97,7 +98,11 @@ def analyze():
         )
         #we need this for front 
         output_json = processor.process()
-        #form the payload for the model
+        # For manual search, we need to build the payload differently
+        # build_payload expects a list of items, so we wrap output_json in a list
+        # and add the mission information
+        
+        payload = build_payload(output_json, optimization_type=optimization_type)
     else:
         payload = build_model_payload_from_row(
             mission=mission,
@@ -106,10 +111,11 @@ def analyze():
             model_name=model_name,
             overrides={},
         )
+        payload = payload.to_dict()
 
-    model_result = model_service.predict(payload.to_dict())
+    model_result = model_service.predict(payload)
 
-    response = {"processed_json": output_json,  "manual_search": stellar_all_data}
+    response = {"processed_json": output_json,  "manual_search": stellar_all_data, "model_result": model_result}
     return response
 
 #we need an endpoint that also send the iamges to the front end
