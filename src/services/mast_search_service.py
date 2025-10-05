@@ -115,7 +115,9 @@ class MastSearchService:
                 "params": {
                     "columns": "*",
                     "filters": filters,
-                    "position": f"{ra}, {dec}, {radius_deg}"
+                    "ra": ra,
+                    "dec": dec, 
+                    "radius": radius_deg
                 },
                 "pagesize": 1000,
                 "page": 1
