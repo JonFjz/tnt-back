@@ -1,24 +1,31 @@
 import re, requests
 from urllib.parse import quote_plus
+from src.fits_downloader import LatestFITSFetcher
+from src.stellar_data_fetcher import StarMetaFetcher
+
 class Processor:
-    def __init__(self, mission, target_id, parameters=None, OIlookup=True):
+    def __init__(self, mission, target_id, parameters=None, OIlookup=1, file_path=None):
         self.mission = mission
         self.target_id = target_id
         self.parameters = parameters
         self.OIlookup = OIlookup
-
+        self.file_path = file_path
+        self.response= None
         if self.mission.lower() == "tess":
             self.found = self.foundPlanet()
 
-        if self.OIlookup == True:
+        # First attempt to get data via OI lookup if enabled
+        if self.OIlookup == 1:
             self.response = self.checkOI()
-
-        if self.response:
+            
+        # Fall back to getData method if OI lookup is disabled or found nothing
+        if self.response is None:
+            self.getFitsData()
             self.getData()
-            if self.mission.lower() == "kepler":
-                self.processKIC()
-            elif self.mission.lower() == "tess":
-                self.processTOI()
+            # if self.mission.lower() == "kepler":
+            #     self.processKIC()
+            # elif self.mission.lower() == "tess":
+            #     self.processTOI()
 
         # Check if the target exists in TOI and KOI
         # If not for KOI, get the data for TOI, download it, saves which was the latest that it used and save it in the data folder
@@ -93,16 +100,26 @@ class Processor:
         else:
             raise ValueError("Unsupported mission. Use 'Kepler' or 'TESS'.")
 
-    def getData(self):
-        pass
+    def getFitsData(self):
+        if self.file_path is None:
+            mission = (self.mission or "").strip().lower()
+            process = LatestFITSFetcher(
+                mission=mission, 
+                target_id=self.target_id,
+                outdir="./tmp",
+                prefer="spoc",  
+                verbose=True,
+            )
+            path = process.download()
+            self.file_path = str(path) if path else None
+            self.getData()
 
-    def processKIC(self):
-        pass
 
-    def processTOI(self):
-        pass
-
-
+    def getData(self):   
+        mission = (self.mission or "").strip().lower()
+        meta = StarMetaFetcher(mission, self.target_id) 
+        self.stellar = meta.fetch_stellar()
+        self.products = meta.list_mast_products()
 
     def getBestParametersAI(self):
         # Implement the logic to get the best parameters using AI (gpt)

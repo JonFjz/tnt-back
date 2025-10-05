@@ -10,16 +10,18 @@ app = Flask(__name__)
 def analyze():
     mission = (request.args.get("mission") or "").strip()
     target_id = (request.args.get("id") or "").strip()
-    Oilookup = request.args.get("Oilookup") or "true"
+    Oilookup = request.args.get("Oilookup")
     parameters = request.args.get("parameters") or "{}"
 
     file = request.files.get("file")
     if file:
         file_processor = FileProcessor(file)
         
-    response = Processor(mission, target_id, parameters, Oilookup)
+    response = Processor(mission, target_id, parameters, Oilookup, file_processor.file_path if file else None)
+    
+    #call drings function to analyze the data
     # call the ai model here to analyze the data
-    return jsonify(response.found)
+    return {"file_path": response.file_path, "response": response.response, "stellar": response.stellar, "products": response.products}
 
 @app.get("/train")
 def train_model():
@@ -28,7 +30,7 @@ def train_model():
 
 
 if __name__ == "__main__":
-    # For local dev only
+   
     app.run(host="127.0.0.1", port=5000, debug=True)
 
 

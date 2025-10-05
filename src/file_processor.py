@@ -19,7 +19,7 @@ class FileProcessor:
             file_path = self.file
             file_name = os.path.basename(file_path)
             destination = os.path.join(self.tmp_dir, file_name)
-            self.file_path = destination
+            self.file_path = str(destination)  # Ensure path is a string for JSON serialization
             # Check if file already exists in destination
             if not os.path.exists(destination):
                 shutil.copy2(file_path, destination)
@@ -37,7 +37,7 @@ class FileProcessor:
                 file_name = f"file_{str(uuid.uuid4())[:8]}"
                 
             destination = os.path.join(self.tmp_dir, file_name)
-            self.file_path = destination
+            self.file_path = str(destination)  # Ensure path is a string for JSON serialization
             if not os.path.exists(destination):
                
                 with open(destination, 'wb') as f:
