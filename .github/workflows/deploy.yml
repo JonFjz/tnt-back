@@ -32,7 +32,7 @@ jobs:
       run: docker build -t tnt-back .
 
     - name: Run Docker container
-      run: docker run -d -p 5000:5000 --restart=unless-stopped --gpus all --device /dev/nvidia0 --device /dev/nvidiactl --device /dev/nvidia-uvm --name tnt-back tnt-back
+      run: docker run -d -p 5000:5000 -v /home/tnt/saved_models:/app/saved_models --restart=unless-stopped --gpus all --device /dev/nvidia0 --device /dev/nvidiactl --device /dev/nvidia-uvm --name tnt-back tnt-back
 
     # - name: Verify deployment
     #   run: |
