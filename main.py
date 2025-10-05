@@ -1,19 +1,29 @@
 
 from flask import Flask, request, jsonify
 import pandas as pd
-from src.star_manager import StarManager
-
+from src.star_manager import Processor
+from src.file_processor import FileProcessor
 app = Flask(__name__)
-manager = StarManager()
 
-@app.get("/stars")
-def get_star_lightcurve():
-    
+
+@app.get("/analyze")
+def analyze():
     mission = (request.args.get("mission") or "").strip()
     target_id = (request.args.get("id") or "").strip()
-    df = manager.fetch_lightcurve(mission, target_id)
-    return jsonify(df.to_dict(orient="records"))
+    Oilookup = request.args.get("Oilookup") or "true"
+    parameters = request.args.get("parameters") or "{}"
 
+    file = request.files.get("file")
+    if file:
+        file_processor = FileProcessor(file)
+        
+    response = Processor(mission, target_id, parameters, Oilookup)
+    # call the ai model here to analyze the data
+    return jsonify(response.found)
+
+@app.get("/train")
+def train_model():
+    return 2
 
 
 
