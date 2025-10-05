@@ -1,7 +1,7 @@
 
 from flask import Flask, request, jsonify
 import pandas as pd
-from src.star_manager import Processor
+from src.star_manager import StarProcessor
 from src.file_processor import FileProcessor
 from src.services.model_service import ModelService
 import os
@@ -26,11 +26,18 @@ def analyze():
     if file:
         file_processor = FileProcessor(file)
         
-    response = Processor(mission, target_id, parameters, Oilookup, file_processor.file_path if file else None)
+    response = StarProcessor(mission, target_id, parameters, Oilookup, file_processor.file_path if file else None)
     
     #call drings function to analyze the data
-    # call the ai model here to analyze the data
-    return {"file_path": response.file_path, "response": response.response, "stellar": response.stellar, "products": response.products}
+
+    # result = model_service.predict(data)
+        
+    #     # Check if result is tuple with error status
+    # if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], int):
+    #         return jsonify(result[0]), result[1]
+        
+
+    return {"response": response.response}
 
 @app.route('/train-model', methods=['POST'])
 def train_model():

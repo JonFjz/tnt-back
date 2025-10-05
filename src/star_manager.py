@@ -3,7 +3,7 @@ from urllib.parse import quote_plus
 from src.fits_downloader import LatestFITSFetcher
 from src.stellar_data_fetcher import StarMetaFetcher
 
-class Processor:
+class StarProcessor:
     def __init__(self, mission, target_id, parameters=None, OIlookup=1, file_path=None):
         self.mission = mission
         self.target_id = target_id
@@ -11,17 +11,19 @@ class Processor:
         self.OIlookup = OIlookup
         self.file_path = file_path
         self.response= None
+        self.found = None
+
         if self.mission.lower() == "tess":
             self.found = self.foundPlanet()
 
         # First attempt to get data via OI lookup if enabled
-        if self.OIlookup == 1:
+        if self.OIlookup:
             self.response = self.checkOI()
-            
-        # Fall back to getData method if OI lookup is disabled or found nothing
-        if self.response is None:
-            self.getFitsData()
-            self.getData()
+          
+
+        # if self.response is None:
+        #     self.getFitsData()
+        #     self.getData()  # Now we need to call this explicitly
             # if self.mission.lower() == "kepler":
             #     self.processKIC()
             # elif self.mission.lower() == "tess":
@@ -112,7 +114,7 @@ class Processor:
             )
             path = process.download()
             self.file_path = str(path) if path else None
-            self.getData()
+            # We'll call getData() separately if needed, not automatically here
 
 
     def getData(self):   
