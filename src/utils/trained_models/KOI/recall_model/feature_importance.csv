@@ -1,0 +1,15 @@
+Feature,Importance,is_engineered
+koi_max_mult_ev,17627.940884530544,False
+koi_prad,13857.823505863547,False
+koi_dor,11641.21302242577,False
+koi_duration_err1,11613.289553168259,False
+koi_model_snr,10792.62029004097,False
+koi_ror,10683.180285155773,False
+koi_num_transits,10654.756498271832,False
+koi_srho,9781.73495477438,False
+koi_period_err2,9254.25858784467,False
+koi_srad_err1,8830.511194601655,False
+koi_insol,7007.570621699095,False
+koi_prad_err1,5987.176241200417,False
+eng_transit_probability,5845.992996573448,True
+koi_teq,3417.0192273259163,False

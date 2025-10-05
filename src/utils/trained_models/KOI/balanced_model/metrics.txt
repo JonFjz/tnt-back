@@ -1,0 +1,54 @@
+Model Description: balanced_light_beta1.0_all_features_importance_KOI
+Timestamp: 20251005_064435
+
+Model Parameters:
+  booster: gbtree
+  reg_lambda: 0.856624840604558
+  reg_alpha: 1.395484811767067e-05
+  max_depth: 4
+  learning_rate: 0.16721412118462584
+  gamma: 7.13658844474795e-06
+  min_child_weight: 2
+  subsample: 0.7440240037775315
+  colsample_bytree: 0.8769006944547012
+  objective: binary:logistic
+  n_estimators: 200
+  random_state: 42
+
+Dataset Information:
+  Total samples: 9564
+  Features used: 14
+  Class distribution: {0: 4839, 1: 4725}
+
+Performance Metrics for Test Set:
+  Accuracy: 0.8554
+  Precision: 0.8715
+  Recall: 0.8451
+  F1 Score: 0.8581
+  ROC AUC: 0.9316
+
+Performance Across Datasets:
+                   Training   Validation    Test
+  Accuracy:        0.9343     0.8428      0.8554
+  Precision:       0.9309     0.8399      0.8715
+  Recall:          0.9365     0.8376      0.8451
+  F1 Score:        0.9337     0.8388      0.8581
+  ROC AUC:         0.9839     0.9310      0.9316
+
+Test Set Confusion Matrix:
+  True Negatives: 240
+  False Positives: 37
+  False Negatives: 46
+  True Positives: 251
+
+Top 10 Important Features:
+  koi_prad: 0.2235
+  koi_num_transits: 0.1248
+  koi_dor: 0.1023
+  koi_duration_err1: 0.0758
+  koi_ror: 0.0607
+  koi_teq: 0.0601
+  koi_period_err2: 0.0516
+  koi_srad_err1: 0.0507
+  koi_max_mult_ev: 0.0436
+  koi_insol: 0.0433

@@ -1,0 +1,65 @@
+Model Description: precision_all_features_importance_KOI
+Timestamp: 20251005_070914
+
+Model Parameters:
+  boosting_type: gbdt
+  metric: auc
+  learning_rate: 0.1
+  num_leaves: 31
+  max_depth: 6
+  lambda_l1: 0.1
+  lambda_l2: 0.2
+  feature_fraction: 0.9
+  bagging_fraction: 0.8
+  bagging_freq: 5
+  scale_pos_weight: 3.0
+  seed: 42
+  objective: custom_asymmetric_objective (penalizing false negatives)
+  classification_threshold: 0.3
+  F-score beta value: 0.5
+
+Dataset Information:
+  Total samples: 9564
+  Features used: 14
+  Class distribution: {0: 4839, 1: 4725}
+
+Performance Metrics for Test Set:
+  Accuracy: 0.8188
+  Precision: 0.8971
+  Recall: 0.7340
+  F1 Score: 0.8074
+  F0.5 Score: 0.8589
+  ROC AUC: 0.9236
+
+Performance Across Datasets:
+                   Training   Validation    Test
+  Accuracy:        0.8739     0.8323      0.8188
+  Precision:       0.9470     0.9062      0.8971
+  Recall:          0.7889     0.7324      0.7340
+  F1 Score:        0.8608     0.8101      0.8074
+  F0.5 Score:   0.9105     0.8651      0.8589
+  ROC AUC:         0.9667     0.9290      0.9236
+
+Test Set Confusion Matrix:
+  True Negatives: 252
+  False Positives: 25
+  False Negatives: 79
+  True Positives: 218
+
+Top 10 Important Features:
+  koi_prad: 9547.9301
+  koi_num_transits: 5309.7275
+  koi_dor: 3780.9951
+  koi_duration_err1: 3669.7634
+  koi_ror: 1641.2013
+  koi_srad_err1: 1616.0213
+  koi_srho: 1517.6822
+  koi_model_snr: 1450.5347
+  koi_max_mult_ev: 1364.2983
+  koi_period_err2: 1300.6874
+
+Recall Optimization Techniques Used:
+  - Custom asymmetric objective function
+  - High scale_pos_weight value (3.0)
+  - Lower classification threshold (0.3)
+  - Optimization for F0.5 score

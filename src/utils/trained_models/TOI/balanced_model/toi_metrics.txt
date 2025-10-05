@@ -1,0 +1,50 @@
+Model Description: possible_features_balanced
+Timestamp: 20251005_062509
+
+Model Parameters:
+  booster: gbtree
+  objective: binary:logistic
+  max_depth: 4
+  learning_rate: 0.1
+  min_child_weight: 2
+  subsample: 0.8
+  colsample_bytree: 0.8
+  reg_lambda: 1.0
+  reg_alpha: 0.01
+  n_estimators: 200
+  random_state: 42
+
+Dataset Information:
+  Total samples: 2464
+  Features used: 23
+  Class distribution: {1.0: 1267, 0.0: 1197}
+
+Performance Across Datasets:
+                   Training   Validation    Test
+  Accuracy:        0.9936     0.8676      0.8973
+  Precision:       0.9944     0.8439      0.9048
+  Recall:          0.9932     0.9105      0.8953
+  F1 Score:        0.9938     0.8759      0.9000
+  ROC AUC:         0.9997     0.9345      0.9553
+
+Cross-validation Results:
+  CV F1 scores: 0.9170, 0.8719, 0.8733, 0.8626, 0.8868
+  Mean CV F1: 0.8823 ± 0.0190
+
+Test Set Confusion Matrix:
+  True Negatives: 161
+  False Positives: 18
+  False Negatives: 20
+  True Positives: 171
+
+Top 10 Important Features:
+  eng_transit_probability: 0.0954
+  pl_trandurherr1: 0.0885
+  st_disterr2: 0.0535
+  st_rad: 0.0501
+  st_disterr1: 0.0490
+  pl_orbper: 0.0461
+  pl_trandep: 0.0459
+  st_teff: 0.0454
+  eng_prad_srad_ratio: 0.0436
+  pl_orbpererr1: 0.0413

@@ -1,0 +1,65 @@
+Model Description: high_recall_all_features_importance_TOI
+Timestamp: 20251005_063328
+
+Model Parameters:
+  boosting_type: gbdt
+  metric: auc
+  learning_rate: 0.1
+  num_leaves: 31
+  max_depth: 6
+  lambda_l1: 0.1
+  lambda_l2: 0.2
+  feature_fraction: 0.9
+  bagging_fraction: 0.8
+  bagging_freq: 5
+  scale_pos_weight: 20.0
+  seed: 42
+  objective: custom_asymmetric_objective (penalizing false negatives)
+  classification_threshold: 0.1
+  F-score beta value: 2.0
+
+Dataset Information:
+  Total samples: 2464
+  Features used: 23
+  Class distribution: {1.0: 1267, 0.0: 1197}
+
+Performance Metrics for Test Set:
+  Accuracy: 0.8649
+  Precision: 0.8250
+  Recall: 0.9167
+  F1 Score: 0.8684
+  F2.0 Score: 0.8967
+  ROC AUC: 0.9490
+
+Performance Across Datasets:
+                   Training   Validation    Test
+  Accuracy:        0.9954     0.8463      0.8649
+  Precision:       0.9911     0.7899      0.8250
+  Recall:          1.0000     0.9612      0.9167
+  F1 Score:        0.9955     0.8672      0.8684
+  F2.0 Score:   0.9982     0.9212      0.8967
+  ROC AUC:         1.0000     0.9439      0.9490
+
+Test Set Confusion Matrix:
+  True Negatives: 62
+  False Positives: 14
+  False Negatives: 6
+  True Positives: 66
+
+Top 10 Important Features:
+  pl_orbper: 4045.0334
+  pl_trandurh: 3824.2843
+  pl_trandurherr2: 3787.4244
+  pl_tranmid: 3402.7049
+  st_tefferr2: 2954.2674
+  pl_tranmiderr1: 2942.9871
+  st_teff: 2888.7874
+  eng_transit_probability: 2861.5836
+  pl_trandeperr2: 2816.2623
+  st_disterr2: 2798.5042
+
+Recall Optimization Techniques Used:
+  - Custom asymmetric objective function
+  - High scale_pos_weight value (20.0)
+  - Lower classification threshold (0.1)
+  - Optimization for F2.0 score

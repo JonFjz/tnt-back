@@ -1,0 +1,65 @@
+Model Description: precision_all_features_importance_TOI
+Timestamp: 20251005_063113
+
+Model Parameters:
+  boosting_type: gbdt
+  metric: auc
+  learning_rate: 0.1
+  num_leaves: 31
+  max_depth: 6
+  lambda_l1: 0.1
+  lambda_l2: 0.2
+  feature_fraction: 0.9
+  bagging_fraction: 0.8
+  bagging_freq: 5
+  scale_pos_weight: 3.0
+  seed: 42
+  objective: custom_asymmetric_objective (penalizing false positives)
+  classification_threshold: 0.6
+  F-score beta value: 0.5
+
+Dataset Information:
+  Total samples: 2464
+  Features used: 23
+  Class distribution: {1.0: 1267, 0.0: 1197}
+
+Performance Metrics for Test Set:
+  Accuracy: 0.8514
+  Precision: 0.9630
+  Recall: 0.7222
+  F1 Score: 0.8254
+  F0.5 Score: 0.9028
+  ROC AUC: 0.9455
+
+Performance Across Datasets:
+                   Training   Validation    Test
+  Accuracy:        0.9954     0.8649      0.8514
+  Precision:       1.0000     0.8908      0.9630
+  Recall:          0.9910     0.8447      0.7222
+  F1 Score:        0.9955     0.8671      0.8254
+  F0.5 Score:   0.9982     0.8812      0.9028
+  ROC AUC:         1.0000     0.9446      0.9455
+
+Test Set Confusion Matrix:
+  True Negatives: 74
+  False Positives: 2
+  False Negatives: 20
+  True Positives: 52
+
+Top 10 Important Features:
+  eng_prad_srad_ratio: 1069.0540
+  eng_transit_probability: 955.4279
+  pl_trandep: 880.1322
+  pl_orbper: 874.2905
+  pl_tranmid: 865.1197
+  pl_orbpererr1: 733.8799
+  st_teff: 722.2322
+  st_dist: 721.5987
+  pl_trandurh: 712.9649
+  eng_period_duration_ratio: 705.5861
+
+Precision Optimization Techniques Used:
+  - Custom asymmetric objective function
+  - Moderate scale_pos_weight value (3.0)
+  - Higher classification threshold (0.6)
+  - Optimization for F0.5 score

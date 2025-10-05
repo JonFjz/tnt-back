@@ -1,0 +1,119 @@
+{
+    "model_info": {
+        "model_name": "recall_model",
+        "model_type": "TOI",
+        "optimization_type": "recall",
+        "algorithm": "lightgbm",
+        "beta": 2.0,
+        "threshold": 0.3,
+        "weight_value": 350.0,
+        "features": [
+            "pl_trandurherr1",
+            "eng_transit_probability",
+            "pl_trandurherr2",
+            "eng_prad_srad_ratio",
+            "pl_orbpererr1",
+            "pl_orbper",
+            "eng_period_duration_ratio",
+            "eng_duration_period_ratio",
+            "pl_tranmiderr1",
+            "pl_trandeperr2",
+            "pl_tranmid",
+            "pl_trandep",
+            "pl_trandurh",
+            "pl_trandeperr1",
+            "st_tmagerr2",
+            "st_disterr2",
+            "st_loggerr2",
+            "st_disterr1",
+            "st_dist",
+            "st_teff",
+            "st_tmagerr1",
+            "st_rad",
+            "st_tefferr2"
+        ],
+        "feature_count": 23,
+        "class_distribution": {
+            "1": 1267,
+            "0": 1197
+        }
+    },
+    "evaluation": {
+        "training": {
+            "dataset": "training",
+            "metrics": {
+                "accuracy": 0.622969837587007,
+                "precision": 0.577023498694517,
+                "recall": 0.9977426636568849,
+                "f1": 0.7311827956989247,
+                "f2.0": 0.8707643814026793,
+                "roc_auc": 0.7107585781474757
+            },
+            "confusion_matrix": {
+                "true_negative": 190,
+                "false_positive": 648,
+                "false_negative": 2,
+                "true_positive": 884
+            }
+        },
+        "validation": {
+            "dataset": "validation",
+            "metrics": {
+                "accuracy": 0.6189189189189189,
+                "precision": 0.574468085106383,
+                "recall": 0.9947368421052631,
+                "f1": 0.7283236994219653,
+                "f2.0": 0.8677685950413223,
+                "roc_auc": 0.7265497076023392
+            },
+            "confusion_matrix": {
+                "true_negative": 40,
+                "false_positive": 140,
+                "false_negative": 1,
+                "true_positive": 189
+            }
+        },
+        "test": {
+            "dataset": "test",
+            "metrics": {
+                "accuracy": 0.6486486486486487,
+                "precision": 0.5950155763239875,
+                "recall": 1.0,
+                "f1": 0.74609375,
+                "f2.0": 0.880184331797235,
+                "roc_auc": 0.711764017666501
+            },
+            "confusion_matrix": {
+                "true_negative": 49,
+                "false_positive": 130,
+                "false_negative": 0,
+                "true_positive": 191
+            }
+        }
+    },
+    "feature_importance": {
+        "pl_trandurherr2": 777.4577046334743,
+        "pl_orbpererr1": 660.068311214447,
+        "st_disterr2": 504.37939453125,
+        "st_rad": 484.64600372314453,
+        "eng_transit_probability": 364.0833528637886,
+        "st_teff": 90.54891061782837,
+        "st_tmagerr2": 85.18290328979492,
+        "eng_period_duration_ratio": 2.6264700889587402,
+        "pl_trandurherr1": 0.0,
+        "eng_prad_srad_ratio": 0.0,
+        "pl_orbper": 0.0,
+        "eng_duration_period_ratio": 0.0,
+        "pl_tranmiderr1": 0.0,
+        "pl_trandeperr2": 0.0,
+        "pl_tranmid": 0.0,
+        "pl_trandep": 0.0,
+        "pl_trandurh": 0.0,
+        "pl_trandeperr1": 0.0,
+        "st_loggerr2": 0.0,
+        "st_disterr1": 0.0,
+        "st_dist": 0.0,
+        "st_tmagerr1": 0.0,
+        "st_tefferr2": 0.0
+    }
+}
