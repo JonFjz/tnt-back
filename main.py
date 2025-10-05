@@ -26,6 +26,11 @@ def train_model():
     return 2
 
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
 
 if __name__ == "__main__":
     # For local dev only
