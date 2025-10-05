@@ -16,7 +16,6 @@ class StarProcessor:
         if self.mission.lower() == "tess":
             self.found = self.foundPlanet()
 
-        # First attempt to get data via OI lookup if enabled
         if self.oi_lookup:
             self.response = self.checkOI()
           

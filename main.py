@@ -5,6 +5,7 @@ from src.star_manager import StarProcessor
 from src.file_processor import FileProcessor
 from src.services.model_service import ModelService
 from src.services.mast_search_service import MastSearchService
+from src.data_mapper import build_model_payload_from_row
 import os
 
 app = Flask(__name__)
@@ -54,6 +55,8 @@ def analyze():
     target_id = (request.args.get("id") or "").strip()
     oi_lookup = request.args.get("oi_lookup", default=1, type=int)
     parameters = request.args.get("parameters") or "{}"
+    optimization_type = (request.args.get("optimization_type") or "recall").strip()
+    model_name = (request.args.get("model_name") or "default_model").strip()
 
     file = request.files.get("file")
     if file:
@@ -61,15 +64,24 @@ def analyze():
         
     response = StarProcessor(mission, target_id, oi_lookup, parameters,  file_processor.file_path if file else None)
     
+
     #call drings function to analyze the data
-    # result = model_service.predict(data)
+
+    payload = build_model_payload_from_row(
+        mission=mission,
+        row=response.response,
+        optimization_type=optimization_type,
+        model_name=model_name,
+        overrides={},
+    )
+
+    result = model_service.predict(payload.to_dict())
     
-    # #     # Check if result is tuple with error status
-    # if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], int):
-    #         return jsonify(result[0]), result[1]
+    if isinstance(result, tuple) and len(result) == 2 and isinstance(result[1], int):
+            return jsonify(result[0]), result[1]
         
 
-    return {"response": response.response}
+    return {"airesponse":result, "response": response.response}
 
 @app.route('/train-model', methods=['POST'])
 def train_model():

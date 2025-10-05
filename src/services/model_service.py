@@ -782,7 +782,26 @@ class ModelService:
                     'status': 'error', 
                     'message': f'Missing features: {missing_features}. Required features for {model_type} models are: {required_features}'
                 }, 400
-                
+            
+            # Convert all numeric columns and track column types
+            print("Column types before conversion:")
+            print(input_df.dtypes)
+            
+            # Force conversion to float64 for all columns
+            for col in input_df.columns:
+                try:
+                    input_df[col] = input_df[col].astype('float64')
+                except Exception as e:
+                    print(f"Error converting {col}: {e}")
+                    # Apply more aggressive conversion
+                    input_df[col] = pd.to_numeric(input_df[col], errors='coerce')
+            
+            # Fill any NaN values with 0
+            input_df = input_df.fillna(0.0)
+            
+            print("Column types after conversion:")
+            print(input_df.dtypes)
+            
             # Extract only the required features
             X = input_df[required_features]
             print(f"Using {len(required_features)} features for prediction")
