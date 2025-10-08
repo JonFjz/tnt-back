@@ -110,11 +110,13 @@ class StarProcessor:
                 mission=mission, 
                 target_id=self.target_id,
                 outdir="./tmp",
-                prefer="spoc",  
+                prefer="spoc",
+                prefer_flux="pdcsap",
+                headers_only=False,
                 verbose=True,
             )
-            path = process.download()
-            self.file_path = str(path) if path else None
+            selection  = process.select_or_download()
+            self.file_path = str(selection["path"]) if selection["path"] else None
             # We'll call getData() separately if needed, not automatically here
 
 

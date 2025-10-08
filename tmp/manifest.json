@@ -1,0 +1,57 @@
+{
+  "{\"flux\": \"pdcsap\", \"headers_only\": false, \"mission\": \"tess\", \"prefer\": \"spoc\", \"quarter\": null, \"sector\": null, \"target\": \"79748331\", \"tesscut\": false}": {
+    "mission": "tess",
+    "target": "TIC 79748331",
+    "mode": "download",
+    "author": "SPOC",
+    "group_col": "sequence_number",
+    "group_val": 94,
+    "productFilename": "tess2025180145000-s0094-0000000079748331-0291-s_lc.fits",
+    "path": "C:\\Users\\LuriMorina\\OneDrive - Tratics LLC\\CODE\\ARASAKA\\NASA SPACEAPP\\tnt-back\\tmp\\mastDownload\\TESS\\tess2025180145000-s0094-0000000079748331-0291-s\\tess2025180145000-s0094-0000000079748331-0291-s_lc.fits",
+    "notes": "prefer_flux=pdcsap"
+  },
+  "{\"flux\": \"pdcsap\", \"headers_only\": false, \"mission\": \"tess\", \"prefer\": \"spoc\", \"quarter\": null, \"sector\": null, \"target\": \"261136679\", \"tesscut\": false}": {
+    "mission": "tess",
+    "target": "TIC 261136679",
+    "mode": "download",
+    "author": "SPOC",
+    "group_col": "sequence_number",
+    "group_val": 95,
+    "productFilename": "tess2025206162959-s0095-0000000261136679-0292-s_lc.fits",
+    "path": "C:\\Users\\LuriMorina\\OneDrive - Tratics LLC\\CODE\\ARASAKA\\NASA SPACEAPP\\tnt-back\\tmp\\mastDownload\\Kepler\\kplr011145123_lc_Q111111111111111111\\kplr011145123-2013131215648_llc.fits",
+    "notes": "prefer_flux=pdcsap"
+  },
+  "{\"flux\": \"pdcsap\", \"headers_only\": false, \"mission\": \"tess\", \"prefer\": \"spoc\", \"quarter\": null, \"sector\": null, \"target\": \"269273552\", \"tesscut\": false}": {
+    "mission": "tess",
+    "target": "TIC 269273552",
+    "mode": "download",
+    "author": "QLP",
+    "group_col": "sequence_number",
+    "group_val": 87,
+    "productFilename": "hlsp_qlp_tess_ffi_s0087-0000000269273552_tess_v01_llc.fits",
+    "path": "C:\\Users\\LuriMorina\\OneDrive - Tratics LLC\\CODE\\ARASAKA\\NASA SPACEAPP\\tnt-back\\tmp\\mastDownload\\Kepler\\kplr011145123_lc_Q111111111111111111\\kplr011145123-2013131215648_llc.fits",
+    "notes": "prefer_flux=pdcsap"
+  },
+  "{\"flux\": \"pdcsap\", \"headers_only\": false, \"mission\": \"tess\", \"prefer\": \"spoc\", \"quarter\": null, \"sector\": null, \"target\": \"388857263\", \"tesscut\": false}": {
+    "mission": "tess",
+    "target": "TIC 388857263",
+    "mode": "download",
+    "author": "SPOC",
+    "group_col": "sequence_number",
+    "group_val": 65,
+    "productFilename": "tess2023124020739-s0065-0000000388857263-0259-s_lc.fits",
+    "path": "C:\\Users\\LuriMorina\\OneDrive - Tratics LLC\\CODE\\ARASAKA\\NASA SPACEAPP\\tnt-back\\tmp\\mastDownload\\Kepler\\kplr011145123_lc_Q111111111111111111\\kplr011145123-2013131215648_llc.fits",
+    "notes": "prefer_flux=pdcsap"
+  },
+  "{\"flux\": \"pdcsap\", \"headers_only\": false, \"mission\": \"kepler\", \"prefer\": \"spoc\", \"quarter\": null, \"sector\": null, \"target\": \"11145123\", \"tesscut\": false}": {
+    "mission": "kepler",
+    "target": "KIC 11145123",
+    "mode": "download",
+    "author": "Kepler",
+    "group_col": null,
+    "group_val": null,
+    "productFilename": "kplr011145123-2013131215648_llc.fits",
+    "path": "C:\\Users\\LuriMorina\\OneDrive - Tratics LLC\\CODE\\ARASAKA\\NASA SPACEAPP\\tnt-back\\tmp\\mastDownload\\Kepler\\kplr011145123_lc_Q111111111111111111\\kplr011145123-2013131215648_llc.fits",
+    "notes": "prefer_flux=pdcsap"
+  }
+}

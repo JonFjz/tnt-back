@@ -1,12 +1,63 @@
-# src/stellar_data_fetcher.py
+# star_meta_fetcher_optimized.py
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Dict, Any, Optional
-import math, re
+from typing import Dict, Any, Optional, Iterable, Tuple
+import re, math, time, os
+from collections import OrderedDict
 
 from astroquery.mast import Catalogs
 from astroquery.ipac.nexsci.nasa_exoplanet_archive import NasaExoplanetArchive
 
+
+# --------------------------- small, fast TTL cache ---------------------------
+
+class TTLCache:
+    """Simple in-process TTL+LRU cache."""
+    def __init__(self, maxsize: int = 512, ttl: float = 3600.0):
+        self.maxsize = maxsize
+        self.ttl = ttl
+        self._data: OrderedDict[str, Tuple[float, Any]] = OrderedDict()
+
+    def get(self, key: str) -> Any | None:
+        now = time.time()
+        item = self._data.get(key)
+        if not item:
+            return None
+        expires, value = item
+        if expires < now:
+            # expired -> drop
+            self._data.pop(key, None)
+            return None
+        # LRU touch
+        self._data.move_to_end(key)
+        return value
+
+    def set(self, key: str, value: Any):
+        now = time.time()
+        self._data[key] = (now + self.ttl, value)
+        self._data.move_to_end(key)
+        if len(self._data) > self.maxsize:
+            self._data.popitem(last=False)
+
+
+# Optional Redis backend (only if you want it; otherwise ignore)
+class RedisCache:
+    """Tiny wrapper; expects a redis-py client with get/setex."""
+    def __init__(self, client, ttl: int = 3600):
+        self.client = client
+        self.ttl = ttl
+
+    def get(self, key: str) -> Any | None:
+        import json
+        raw = self.client.get(key)
+        return None if raw is None else json.loads(raw)
+
+    def set(self, key: str, value: Any):
+        import json
+        self.client.setex(key, self.ttl, json.dumps(value))
+
+
+# ----------------------------- fetcher proper -------------------------------
 
 class StarNotFound(Exception):
     pass
@@ -15,112 +66,187 @@ class StarNotFound(Exception):
 @dataclass
 class StarMetaFetcher:
     """
-    Fast, no-download stellar metadata fetcher.
-
-    - mission: 'tess' or 'kepler'
-    - target_id: TIC / TOI / KIC / KOI (flexible parsing)
+    Fast, cached stellar metadata fetcher for TESS/Kepler.
 
     Public:
-      fetch_stellar() -> {"source": <str>, "stellar": {st_*}, "raw": <dict>}
+      fetch_stellar() -> {
+        "source": <str>,
+        "stellar": {st_* fields...},
+        "raw": <dict of raw row>,
+        "timing_ms": <float>
+      }
+
+    Notes:
+      - Only the columns needed by your models are requested where possible.
+      - Caches both ID resolution (TOI->TIC, KOI->KIC) and final stellar rows.
     """
     mission: str
     target_id: str
+    cache: Any | None = None     # TTLCache or RedisCache or None
+    cache_ttl_s: int = 3600
+
+    # Columns we actually need downstream (TIC / DR25 names vary; we trim after fetch)
+    TIC_SELECT = [
+        "Teff","e_Teff","logg","e_logg","rad","e_rad","mass","e_mass",
+        "Tmag","e_Tmag","d","e_d"
+    ]
+    # DR25 columns (attempt these first; we have fallbacks in the mapper)
+    DR25_SELECT = [
+        "kepid","teff","teff_err1","teff_err2",
+        "logg","logg_err1","logg_err2",
+        "radius","radius_err1","radius_err2",
+        "mass","mass_err1","mass_err2",
+        "dist","dist_err1","dist_err2"
+    ]
+
+    def _cache(self) -> Any:
+        if self.cache is None:
+            # default lightweight cache
+            self.cache = TTLCache(maxsize=1024, ttl=self.cache_ttl_s)
+        return self.cache
+
+    # ----------------------------- public API --------------------------------
 
     def fetch_stellar(self) -> Dict[str, Any]:
+        t0 = time.perf_counter()
         m = (self.mission or "").strip().lower()
-        ids = self._parse_ids()
+        if m not in ("tess", "kepler"):
+            raise ValueError("mission must be 'tess' or 'kepler'")
+
+        # normalize + cached ID resolution
+        ids_key = f"ids:{m}:{self.target_id.strip().lower()}"
+        ids = self._cache().get(ids_key)
+        if ids is None:
+            ids = self._parse_and_resolve_ids(m, self.target_id)
+            self._cache().set(ids_key, ids)
 
         if m == "tess":
-            # Resolve TOI -> TIC if needed via NEA TOI table
             tic = ids.get("tic")
-            if tic is None and ids.get("toi") is not None:
-                toi_like = ids["toi"]  # e.g., "700.01" or "K00700.01"
-                q = NasaExoplanetArchive.query_advanced(
-                    table="toi",
-                    select="tid",
-                    where=f"toi={toi_like}" if toi_like.replace('.', '', 1).isdigit()
-                          else f"koi LIKE '{toi_like}%'"
-                )
-                if len(q) == 0:
-                    raise StarNotFound(f"TOI {toi_like} not found in NEA.")
-                tic = int(q["tid"][0])
-
             if tic is None:
                 raise StarNotFound("Could not resolve a TIC id.")
+            row, source = self._query_tic_row(tic)
+            stellar = self._map_tic_to_st(row)
 
-            # Query TIC via MAST Catalogs (no file download)
-            tab = Catalogs.query_object(f"TIC {tic}", catalog="TIC")
-            if len(tab) == 0:
-                raise StarNotFound(f"TIC {tic} not found in TIC.")
-            row = {c: self._to_py(tab[0][c]) for c in tab.colnames}
-            return {
-                "source": "MAST TIC",
-                "stellar": self._map_tic_to_st(row),
-                "raw": row,
-            }
-
-        if m == "kepler":
+        else:  # kepler
             kepid = ids.get("kepid")
-            if kepid is None and ids.get("koi") is not None:
-                koi = ids["koi"]  # e.g., "K00700.01" or "K00700"
-                q = NasaExoplanetArchive.query_advanced(
-                    table="cumulative", select="kepid", where=f"kepoi_name LIKE '{koi}%'"
-                )
-                if len(q) == 0:
-                    raise StarNotFound(f"KOI {koi} not found in NEA cumulative.")
-                kepid = int(q["kepid"][0])
-
             if kepid is None:
                 raise StarNotFound("Could not resolve a KIC id.")
+            row, source = self._query_dr25_row(kepid)
+            stellar = self._map_dr25_to_st(row)
 
-            # DR25 stellar parameters (no file download)
-            dr = NasaExoplanetArchive.query_advanced(
-                table="q1_q17_dr25_stellar", where=f"kepid={int(kepid)}"
-            )
-            if len(dr) == 0:
-                raise StarNotFound(f"DR25 stellar not found for KIC {kepid}.")
-            row = {c: self._to_py(dr[0][c]) for c in dr.colnames}
-            return {
-                "source": "NEA Kepler DR25 stellar",
-                "stellar": self._map_dr25_to_st(row),
-                "raw": row,
-            }
+        t1 = time.perf_counter()
+        return {
+            "source": source,
+            "stellar": stellar,
+            "raw": row,
+            "timing_ms": round((t1 - t0) * 1000.0, 2),
+        }
 
-        raise ValueError("mission must be 'tess' or 'kepler'")
+    # --------------------------- ID normalization ----------------------------
 
-    # ----------------- helpers -----------------
+    def _parse_and_resolve_ids(self, mission: str, target: str) -> Dict[str, Any]:
+        t = (target or "").strip()
 
-    def _parse_ids(self) -> Dict[str, Optional[int | str]]:
-        """Accept TIC/TOI/KIC/KOI styles and normalize."""
-        m = (self.mission or "").strip().lower()
-        t = (self.target_id or "").strip()
-
-        if m == "tess":
-            # TIC nnnn or "TIC nnnn"
+        if mission == "tess":
+            # TIC nnnn or TOI-x.y
             mtic = re.search(r"(?i)(?:tic[:\s-]*)?(\d+)", t)
             if mtic:
-                return {"tic": int(mtic.group(1)), "toi": None}
-            # TOI-1234.01 / TOI 1234.01
+                return {"tic": int(mtic.group(1))}
             mtoi = re.search(r"(?i)toi[\s-]*([0-9]+(?:\.[0-9]+)?)", t)
             if mtoi:
-                return {"tic": None, "toi": mtoi.group(1)}
-            return {"tic": None, "toi": None}
+                toi_val = mtoi.group(1)
+                # NEA: resolve TOI -> TIC id (tid)
+                q = NasaExoplanetArchive.query_advanced(
+                    table="toi", select="tid", where=f"toi={toi_val}"
+                )
+                if len(q) == 0 or q["tid"][0] in (None, ""):
+                    raise StarNotFound(f"TOI {toi_val} not found.")
+                return {"tic": int(q["tid"][0])}
+            raise StarNotFound("Provide a TIC ID or TOI label.")
 
-        if m == "kepler":
-            # KOI-1234.01 or K00001.01 -> KOI code
+        else:
+            # Kepler: KIC nnnn or KOI (K00001.01 / KOI-1.01 etc)
+            mkic = re.search(r"(?i)(?:kic[:\s-]*)?(\d+)", t)
+            if mkic:
+                return {"kepid": int(mkic.group(1))}
             mkoi = re.search(r"(?i)k(?:oi[-\s]*)?(\d+)(?:[.-](\d+))?", t)
             if mkoi:
                 base = int(mkoi.group(1))
                 comp = mkoi.group(2)
                 koi = f"K{base:05d}" + (f".{int(comp):02d}" if comp else "")
-                return {"koi": koi, "kepid": None}
-            # KIC nnnn
-            mkic = re.search(r"(?i)(?:kic[:\s-]*)?(\d+)", t)
-            if mkic:
-                return {"koi": None, "kepid": int(mkic.group(1))}
-            return {"koi": None, "kepid": None}
+                q = NasaExoplanetArchive.query_advanced(
+                    table="cumulative", select="kepid", where=f"kepoi_name LIKE '{koi}%'"
+                )
+                if len(q) == 0 or q["kepid"][0] in (None, ""):
+                    raise StarNotFound(f"KOI {koi} not found.")
+                return {"kepid": int(q["kepid"][0])}
+            raise StarNotFound("Provide a KIC ID or KOI label.")
 
-        return {}
+    # --------------------------- remote queries ------------------------------
+
+    def _query_tic_row(self, tic: int) -> tuple[Dict[str, Any], str]:
+        cache_key = f"tic:{tic}"
+        cached = self._cache().get(cache_key)
+        if cached:
+            return cached, "MAST TIC (cache)"
+
+        # Try server-side select (faster). Fallback trims client-side.
+        row = None
+        try:
+            tab = Catalogs.query_criteria(
+                catalog="TIC", ID=int(tic), select=",".join(self.TIC_SELECT)
+            )
+            if len(tab) > 0:
+                row = {c: self._to_py(tab[0][c]) for c in tab.colnames}
+        except Exception:
+            pass
+
+        if row is None:
+            tab = Catalogs.query_object(f"TIC {tic}", catalog="TIC")
+            if len(tab) == 0:
+                raise StarNotFound(f"TIC {tic} not found in TIC.")
+            raw = {c: self._to_py(tab[0][c]) for c in tab.colnames}
+            # trim only needed keys if present
+            row = {k: raw.get(k) for k in self.TIC_SELECT if k in raw}
+            # keep originals for mappers too
+            row |= raw
+
+        self._cache().set(cache_key, row)
+        return row, "MAST TIC"
+
+    def _query_dr25_row(self, kepid: int) -> tuple[Dict[str, Any], str]:
+        cache_key = f"dr25:{kepid}"
+        cached = self._cache().get(cache_key)
+        if cached:
+            return cached, "NEA DR25 (cache)"
+
+        row = None
+        try:
+            dr = NasaExoplanetArchive.query_advanced(
+                table="q1_q17_dr25_stellar",
+                select=",".join(self.DR25_SELECT),
+                where=f"kepid={int(kepid)}"
+            )
+            if len(dr) > 0:
+                row = {c: self._to_py(dr[0][c]) for c in dr.colnames}
+        except Exception:
+            pass
+
+        if row is None:
+            dr = NasaExoplanetArchive.query_advanced(
+                table="q1_q17_dr25_stellar", where=f"kepid={int(kepid)}"
+            )
+            if len(dr) == 0:
+                raise StarNotFound(f"DR25 stellar not found for KIC {kepid}.")
+            raw = {c: self._to_py(dr[0][c]) for c in dr.colnames}
+            # Keep only useful ones if present
+            trimmed = {k: raw.get(k) for k in self.DR25_SELECT if k in raw}
+            row = trimmed | raw
+
+        self._cache().set(cache_key, row)
+        return row, "NEA Kepler DR25 stellar"
+
+    # ------------------------------ mappers ----------------------------------
 
     @staticmethod
     def _to_py(v):
@@ -145,11 +271,7 @@ class StarMetaFetcher:
                 continue
         return None
 
-    # ---- mappers ----
-
     def _map_tic_to_st(self, row: Dict[str, Any]) -> Dict[str, Optional[float]]:
-        # TIC columns commonly: Teff, e_Teff, logg, e_logg, rad, e_rad, mass, e_mass,
-        # Tmag, e_Tmag, d, e_d (distance); not all rows have all fields.
         pk = self._pick
         eT = pk(row, "e_Teff")
         eR = pk(row, "e_rad")
@@ -180,7 +302,6 @@ class StarMetaFetcher:
         }
 
     def _map_dr25_to_st(self, row: Dict[str, Any]) -> Dict[str, Optional[float]]:
-        # DR25 names vary slightly; try multiple candidates.
         pk = self._pick
 
         te   = pk(row, "teff", "kic_teff")
@@ -219,7 +340,7 @@ class StarMetaFetcher:
             "st_dist":      dist,
             "st_disterr1":  d1,
             "st_disterr2":  d2 if d2 is not None else (-d1 if d1 is not None else None),
-            "st_tmag":      None,   # Kepler stars don't have TESS mag
+            "st_tmag":      None,
             "st_tmagerr1":  None,
             "st_tmagerr2":  None,
         }
