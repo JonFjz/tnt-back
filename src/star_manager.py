@@ -19,13 +19,14 @@ class StarProcessor:
 
         if self.oi_lookup:
             self.response = self.checkOI()
-          
+            
+        self.getData()
 
         if self.response is None:
             self.manualSearch = True
             self.getFitsData()
             print("Downloaded FITS file:", self.file_path)
-            self.getData()
+            
              
            
 
