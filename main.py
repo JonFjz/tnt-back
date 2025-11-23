@@ -26,7 +26,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://192.168.100.66:5173"
+    "http://localhost:5173,http://tnt.thot.info:5173"
 ).split(",")
 
 # one line CORS: no credentials, allow GET/POST/OPTIONS
